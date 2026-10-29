@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Halloween theme checks</title><style>body{background:#171020;color:#e2cfdf;font:14px Arial;padding:20px}button{padding:14px;background:#e6a05b;border:0}iframe{display:block;width:1200px;max-width:100%;height:800px;border:0}li{margin:8px}</style><h1>Halloween / seasonal checks</h1><button id="run">Test Halloween theme and audio</button><p id="result">Ready</p><ol id="checks"></ol><iframe id="play" src="./index.html?qa=1" title="Actual Halloween game"></iframe><script src="./tests/pilot.js"></script><script>
+const f=document.getElementById('play'),out=document.getElementById('checks'),result=document.getElementById('result'),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const state=()=>f.contentWindow.NotRightMeow.snapshot(),key=code=>f.contentDocument.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));
+const check=(ok,label)=>{const li=document.createElement('li');li.textContent=(ok?'PASS: ':'FAIL: ')+label;out.append(li);if(!ok)throw Error(label);};
+async function until(fn){let start=performance.now();while(!fn()){if(performance.now()-start>45000)throw Error('Timeout');await wait(20);}}
+document.getElementById('run').onclick=async()=>{out.innerHTML='';let pilot;try{
+ await until(()=>f.contentWindow.NotRightMeow);check(f.contentDocument.documentElement.classList.contains('halloween'),'Seasonal title and styling active');
+ check(f.contentDocument.querySelector('.title-copy .eyebrow').textContent.includes('HALLOWEEN'),'Halloween start page copy');
+ const is=f.contentWindow.Halloween.isActive;check(is(new Date(2026,9,31,23,59))&&is(new Date(2026,10,1))&&!is(new Date(2026,10,2))&&!is(new Date(2026,8,30)),'Holiday date boundaries and automatic November 2 return');
+ f.contentDocument.getElementById('start').click();if(!state().audio.music)f.contentDocument.getElementById('music').click();
+ pilot=()=>{if(NRMTest.wantsJump(state()))key('Space');};f.contentDocument.addEventListener('nrm-before-step',pilot);
+ await until(()=>{if(state().phase!=='playing')throw Error('Run ended at '+state().score);return state().audio.beat>=65&&state().score>=6;});check(state().audio.state==='running'&&state().audio.theme==='halloween'&&state().audio.musicVoices>0,'Original spooky soundtrack unlocks and plays a complete phrase');
+ check(state().phase==='playing'&&state().score>5,'Halloween scene remains playable with rooftop jumps');
+ key('KeyP');const before=JSON.stringify([state().elapsed,state().y,state().audio.beat]);await wait(150);check(before===JSON.stringify([state().elapsed,state().y,state().audio.beat])&&state().audio.musicVoices===0,'Pause freezes gameplay and stops all music voices');
+ key('Space');await until(()=>state().audio.musicVoices>0);check(state().phase==='playing','Resume restarts spooky soundtrack');
+ f.contentDocument.getElementById('music').click();await wait(120);check(!state().audio.music&&state().audio.musicVoices===0,'Music toggle silences seasonal music');
+ f.contentDocument.getElementById('music').click();await until(()=>state().audio.musicVoices>0);check(state().audio.music,'Music toggle restores seasonal music');key('KeyP');
+ f.style.width='640px';await wait(200);check(f.contentDocument.documentElement.scrollWidth<=640,'Halloween layout fits 640 px');f.style.width='1200px';await wait(150);check(f.contentDocument.documentElement.scrollWidth<=1200,'Halloween layout fits 1200 px');
+ result.textContent='ALL 11 HALLOWEEN CHECKS PASSED';
+ }catch(e){result.textContent='FAILED: '+e.message;}finally{if(pilot)f.contentDocument.removeEventListener('nrm-before-step',pilot);}};
+</script></html>

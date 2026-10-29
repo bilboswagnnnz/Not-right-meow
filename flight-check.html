@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Not Right Meow — Balloon Flight QA</title><style>*{box-sizing:border-box}body{margin:0;padding:20px;background:#10151d;color:#e0d9cb;font:14px Arial}h1{font-size:24px;margin:0 0 8px}p{color:#b4c6c8}main{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1280px}section{border:1px solid #53646b;border-radius:6px;overflow:hidden}h2{font:13px monospace;margin:12px;color:#e8bc83}canvas{display:block;width:100%;aspect-ratio:16/9}button{padding:14px;background:#d7a574;border:0;border-radius:4px;font-weight:bold;cursor:pointer}iframe{display:block;width:1100px;max-width:100%;height:760px;border:0;margin-top:16px}li{margin:6px}</style><h1>NOT RIGHT MEOW / BALLOON RUN</h1><p>50 rooftop landings → inflate → 50 flying gaps → land and run again.</p><main id="scenes"></main><p id="visual-result">Rendering…</p><button id="run">Run full browser flight checks</button><p id="result">Ready — scripted accelerated run through the actual application from score 0.</p><ol id="checks"></ol><iframe id="play" title="Actual playable game under test" src="./index.html?qa=1&amp;fast=1"></iframe><script src="./assets/seasonal.js"></script><script src="./assets/art.js"></script><script src="./src/core.js"></script><script src="./src/renderer.js"></script><script src="./tests/pilot.js"></script><script>
+for(const [label,pick] of [
+ ['LOW PASS / DROP TO THE FLOOR',o=>o.low-o.base<30],
+ ['HIGH WIRE / CLIMB TO THE TOP',o=>o.low-o.base>315],
+ ['THE NEEDLE / TIGHT OPENING',o=>o.high-o.low<=190],
+ ['RECOVERY / WIDE OPENING',o=>o.high-o.low>=290]
+]){
+ const section=document.createElement('section'),h=document.createElement('h2'),canvas=document.createElement('canvas');section.append(h,canvas);document.getElementById('scenes').append(section);
+ const g=new NRM.Game(NRM.rng(17));g.start();let found=false;
+ for(let n=0;n<60000;n++){NRMTest.pilot(g);g.update(NRM.C.step);g.drainEvents();if(g.phase!=='playing')throw Error('Visual route failed '+g.score);const o=g.gates.find(o=>!o.scored);if(g.mode==='flying'&&o&&o.x<470&&o.x>420&&pick({...o,base:g.flightBase})){found=true;break;}}
+ if(!found)throw Error('Missing visual '+label);h.textContent=g.score+' / '+label;
+ const r=new Renderer(canvas);r.time=g.elapsed;r.camera=g.surfaceY-100;r.draw(g,0);
+}
+document.getElementById('visual-result').textContent='Four snapshots rendered by the shipped game engine with scripted jump inputs.';
+const f=document.getElementById('play'),result=document.getElementById('result'),out=document.getElementById('checks'),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const state=()=>f.contentWindow.NotRightMeow.snapshot(),key=(code,repeat=false)=>f.contentDocument.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true,repeat}));
+function check(value,label){const li=document.createElement('li');li.textContent=(value?'PASS: ':'FAIL: ')+label;out.append(li);if(!value)throw Error(label);}
+async function until(fn,timeout=240000){const end=performance.now()+timeout;while(!fn()){if(performance.now()>end)throw Error('Timed out');await wait(20);}}
+document.getElementById('run').onclick=async()=>{out.innerHTML='';result.textContent='Running from score 0…';let pilot;try{
+ await until(()=>f.contentWindow.NotRightMeow);f.contentDocument.getElementById('start').click();
+ let sawLaunch=false,sawAir=false,probing=false,returnState=null;const kinds=new Set(),route=new Map();
+ pilot=()=>{const s=state();if(s.mode==='running'&&s.score===100&&!returnState)returnState=s;if(s.mode==='launch')sawLaunch=true;if(s.mode==='flying'){sawAir=true;for(const o of s.gates){kinds.add(o.kind);route.set(o.index,{...o,relativeLow:o.low-s.flightBase});}}if(!probing&&NRMTest.wantsJump(s))key('Space');result.textContent='Running · score '+s.score+' · '+s.mode;};
+ f.contentDocument.addEventListener('nrm-before-step',pilot);
+ await until(()=>{if(state().phase!=='playing')throw Error('Died before flight at '+state().score);return state().mode==='flying';});
+ check(sawLaunch&&state().score===50,'50th landing inflates the balloon and changes to flight');check(state().balloon===1&&!state().grounded,'Balloon fully inflated; Cookie is airborne');
+ key('KeyP');const frozen=JSON.stringify([state().y,state().gates,state().elapsed,state().balloon]);await wait(180);check(frozen===JSON.stringify([state().y,state().gates,state().elapsed,state().balloon]),'Pause freezes flight, balloon and gates');key('Space');check(state().phase==='playing','Space resumes flight');
+ probing=true;const probeStart=state().modeTime;let probeDone=false,probeError;
+ const probe=()=>{if(state().modeTime-probeStart<.15)return;f.contentDocument.removeEventListener('nrm-before-step',probe);try{key('Space');check(state().vy===NRM.FLIGHT.lift,'Space provides lift while airborne');const v=state().vy;key('Space',true);check(state().vy===v,'Held-key repeat adds no lift');}catch(e){probeError=e;}probing=false;probeDone=true;};
+ f.contentDocument.addEventListener('nrm-before-step',probe);await until(()=>probeDone);if(probeError)throw probeError;
+ check(f.contentDocument.getElementById('run-tip').textContent.includes('Tap to lift'),'Flight control hint replaces rooftop instructions');
+ await until(()=>{if(state().phase!=='playing')throw Error('Flight failed at '+state().score);return state().mode==='landing';});
+ check(state().score===100&&state().flightPassed===50,'Exactly 50 cleared air gaps add 50 points');check(kinds.size===4,'Bridge, cargo, antenna and steel hazards appear');
+ const air=[...route.values()];
+ check(air.some(o=>o.relativeLow<30)&&air.some(o=>o.relativeLow>315),'Openings reach both the bottom and top of the airspace');
+ check(air.some(o=>o.high-o.low<=190)&&air.some(o=>o.high-o.low>=290),'Tight passages alternate with wider recovery openings');
+ check(air.filter(o=>o.direction==='CLIMB').length>=8&&air.filter(o=>o.direction==='DROP').length>=8,'Repeated climbs and drops demand direction changes');
+ check(air.some(o=>o.transferSeconds<1)&&air.some(o=>o.transferSeconds>1.8),'Horizontal spacing varies with the required maneuver');
+ await until(()=>returnState!==null);check(returnState.score===100&&returnState.grounded&&returnState.balloon===0,'Automatic landing returns to rooftop controls without extra score');
+ await until(()=>state().score>=103);check(state().phase==='playing','Rooftop jumps work after the flight section');
+ f.contentDocument.removeEventListener('nrm-before-step',pilot);key('KeyP');const best=state().best;check(best>=103,'Combined run score updates personal best');key('Space');await until(()=>state().phase==='gameover');key('Space');check(state().mode==='running'&&state().score===0&&state().balloon===0,'Restart clears flight state and starts on a roof');key('KeyP');result.textContent='ALL 17 FLIGHT BROWSER CHECKS PASSED';
+ }catch(e){if(pilot)f.contentDocument.removeEventListener('nrm-before-step',pilot);result.textContent='FAILED: '+e.message;}};
+</script></html>

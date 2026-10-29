@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Not Right Meow — Balloon Collision Check</title><style>body{background:#111b27;color:#dce4da;font:16px Arial;padding:28px}li{margin:14px 0}canvas{display:block;width:min(100%,1100px);aspect-ratio:16/9;border:1px solid #5b6d75}</style><h1>Balloon collision regression</h1><p id="result">Running…</p><ol id="checks"></ol><canvas id="scene"></canvas><script src="./assets/seasonal.js"></script><script src="./assets/art.js"></script><script src="./src/core.js"></script><script src="./src/renderer.js"></script><script src="./tests/pilot.js"></script><script>
+const check=(v,t)=>{const li=document.createElement('li');li.textContent=(v?'PASS: ':'FAIL: ')+t;document.getElementById('checks').append(li);if(!v)throw Error(t);};
+try{for(const location of ['gate','ceiling']){
+ const g=new NRM.Game(NRM.rng(17));g.start();for(let n=0;n<16000&&g.mode!=='flying';n++){NRMTest.pilot(g);g.update(NRM.C.step);g.drainEvents();}
+ const o=g.gates[0];o.x=275;g.vy=0;const edge=location==='gate'?o.high:g.flightBase+NRM.FLIGHT.ceiling;if(location==='ceiling')g.gates=[];
+ g.y=edge-NRM.FLIGHT.bodyHeight-5;check(g.y+210>edge,'Balloon overlaps '+location+' in the test');g.update(NRM.C.step);check(g.phase==='playing','Balloon-only contact is safe at '+location);
+ if(location==='gate'){const r=new Renderer(document.getElementById('scene'));r.time=g.elapsed;r.camera=g.surfaceY-100;r.draw(g,0);}
+ g.y=edge-NRM.FLIGHT.bodyHeight+5;g.vy=0;g.update(NRM.C.step);check(g.phase==='dying','Cat contact still collides at '+location);
+}document.getElementById('result').textContent='ALL 6 BROWSER COLLISION CHECKS PASSED';}catch(e){document.getElementById('result').textContent='FAILED: '+e.message;}
+</script></html>

@@ -1,0 +1,34 @@
+name: QR Device Pairing Checks
+on:
+  pull_request:
+    paths:
+      - 'pairing-worker/**'
+      - 'src/pairing.js'
+      - 'src/leaderboard.js'
+      - 'src/game.js'
+      - 'index.html'
+      - 'assets/qrcode.js'
+      - '.github/workflows/qr-pairing-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pairing-worker/**'
+      - 'src/pairing.js'
+      - 'src/leaderboard.js'
+      - 'src/game.js'
+jobs:
+  qr-pairing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse JavaScript source
+        run: |
+          node --check src/leaderboard.js
+          node --check src/game.js
+          node --check src/pairing.js
+          node --check pairing-worker/src/index.js
+      - name: Run encrypted pairing relay tests
+        run: node --test pairing-worker/test/pairing.test.mjs

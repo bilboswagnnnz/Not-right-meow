@@ -28,6 +28,7 @@
    document.getElementById('leaderboard-recovery').onclick=()=>this.openRecovery(false);
    document.getElementById('recovery-close').onclick=()=>this.recovery.close();
    document.getElementById('recovery-copy').onclick=()=>this.copyRecovery();
+   document.getElementById('recovery-show-qr').onclick=()=>this.toggleRecoveryQR();
    document.getElementById('recovery-import').onsubmit=e=>{e.preventDefault();this.importRecovery();};
    this.recovery.addEventListener('close',()=>{if(this.recoveryFromWelcome&&!this.hasName())this.welcome.showModal();this.recoveryFromWelcome=false;});
    this.dialog.addEventListener('close',()=>this.returnFocus?.focus({preventScroll:true}));
@@ -72,12 +73,27 @@
    catch{this.message.textContent='Browser storage is blocked. Allow site storage to join the leaderboard.';}
   }
   async refresh(){
-   if(this.loading)return;this.loading=true;
+   if(this.loading){this.needsRefresh=true;return;}this.loading=true;
+   const token=this.profile.token;
    const button=document.getElementById('leaderboard-refresh');button.disabled=true;
    this.message.textContent='Loading scores…';
-   try{this.render(await this.request());this.message.textContent='Live scores · Top 100 · Highest score first';}
-   catch(e){this.message.textContent=e.message;if(!this.hasScores)document.getElementById('top-three-rows').textContent='Scores unavailable · Tap to retry';}
-   finally{this.loading=false;button.disabled=false;}
+   try{
+    const data=await this.request('GET',undefined,token);
+    if(token!==this.profile.token)return; // Do not import another browser identity's best.
+    this.render(data);this.message.textContent='Live scores · Top 100 · Highest score first';
+   }
+   catch(e){
+    if(token!==this.profile.token)return;
+    this.message.textContent=e.message;
+    if(!this.hasScores)document.getElementById('top-three-rows').textContent='Scores unavailable · Tap to retry';
+   }
+   finally{
+    this.loading=false;button.disabled=false;
+    if(this.needsRefresh||token!==this.profile.token){
+     this.needsRefresh=false;
+     queueMicrotask(()=>this.refresh());
+    }
+   }
   }
   render(data){
    if(data.me&&Number.isFinite(Number(data.me.best)))this.onRemoteBest?.(Number(data.me.best));
@@ -126,6 +142,9 @@
    document.getElementById('recovery-export').hidden=!code;
    document.getElementById('recovery-code').value=code;
    document.getElementById('recovery-entry').value='';
+   document.getElementById('recovery-qr').hidden=true;
+   document.getElementById('recovery-qr-note').hidden=true;
+   document.getElementById('recovery-show-qr').textContent='SHOW RECOVERY CODE AS QR';
    this.recoveryStatus.textContent='';
    this.recovery.showModal();
    (code&&!fromWelcome?document.getElementById('recovery-copy'):document.getElementById('recovery-entry')).focus();
@@ -142,21 +161,38 @@
     this.recoveryStatus.textContent='Clipboard access is blocked. Select and copy the code above.';
    }
   }
-  importRecovery(){
-   let next;
-   try{next=this.parseRecovery(document.getElementById('recovery-entry').value);}
-   catch(e){this.recoveryStatus.textContent=e.message;return;}
+  adoptLinkedProfile(next){
+   if(!/^[a-f0-9]{64}$/.test(next?.token||'')||!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(next?.nickname||''))
+    return false;
    const changed=this.profile.token!==next.token;
-   if(changed&&this.hasName()&&!confirm('Link to '+next.nickname+'? This replaces the current player on this device. Existing leaderboard entries are not merged.'))return;
+   if(changed&&this.hasName()&&!confirm('Link to '+next.nickname+'? This replaces the current player on this device. Existing leaderboard entries are not merged.'))return false;
    try{localStorage.setItem(KEY,JSON.stringify(next));}
-   catch{this.recoveryStatus.textContent='Browser storage is blocked. Allow site storage before linking.';return;}
+   catch{this.message.textContent='Browser storage is blocked. Allow site storage to link devices.';return false;}
    this.profile=next;
    document.getElementById('nickname').value=next.nickname;
    document.getElementById('welcome-name').value=next.nickname;
    if(changed){this.current=null;this.pending=null;this.onIdentityChanged?.();}
-   const fromWelcome=this.recoveryFromWelcome;this.recoveryFromWelcome=false;this.recovery.close();
    this.status.textContent='Player '+next.nickname+' linked on this device.';
    this.refresh();
+   return true;
+  }
+  toggleRecoveryQR(){
+   const img=document.getElementById('recovery-qr'),note=document.getElementById('recovery-qr-note');
+   if(!img.hidden){img.hidden=true;note.hidden=true;img.removeAttribute('src');document.getElementById('recovery-show-qr').textContent='SHOW RECOVERY CODE AS QR';return;}
+   const code=this.recoveryCode();
+   if(!code||typeof qrcode!=='function'){this.recoveryStatus.textContent='Could not generate the recovery QR.';return;}
+   try{
+    const qr=qrcode(0,'M');qr.addData(code);qr.make();
+    img.src=qr.createDataURL(5,4);img.hidden=false;note.hidden=false;
+    document.getElementById('recovery-show-qr').textContent='HIDE RECOVERY CODE QR';
+   }catch{this.recoveryStatus.textContent='Could not generate the recovery QR.';}
+  }
+  importRecovery(){
+   let next;
+   try{next=this.parseRecovery(document.getElementById('recovery-entry').value);}
+   catch(e){this.recoveryStatus.textContent=e.message;return;}
+   if(!this.adoptLinkedProfile(next)){this.recoveryStatus.textContent='Not linked. Your existing player was kept, or browser storage is unavailable.';return;}
+   const fromWelcome=this.recoveryFromWelcome;this.recoveryFromWelcome=false;this.recovery.close();
    if(fromWelcome){const ready=this.onReady;this.onReady=null;ready?.();}
   }
   beginRun(){

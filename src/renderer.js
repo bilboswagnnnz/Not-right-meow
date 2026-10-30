@@ -2,7 +2,7 @@
   'use strict';
   const A=PaperArt,{C}=NRM;
   class Renderer{
-    constructor(canvas){this.canvas=canvas;this.c=canvas.getContext('2d',{alpha:false});this.time=0;this.particles=[];this.rings=[];this.shake=0;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.grain=this.makeGrain();this.resize();}
+    constructor(canvas){this.canvas=canvas;this.c=canvas.getContext('2d',{alpha:false});this.billboardImage=new Image();this.billboardImage.src=new URL("./assets/tori-billboard.jpg",document.baseURI).href;this.billboardAnchor=null;this.billboardLastDistance=0;this.time=0;this.particles=[];this.rings=[];this.shake=0;this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;this.grain=this.makeGrain();this.resize();}
     resize(){const r=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);this.canvas.width=Math.round(r.width*dpr);this.canvas.height=Math.round(r.height*dpr);}
     makeGrain(){const tile=document.createElement('canvas');tile.width=tile.height=192;const c=tile.getContext('2d'),r=NRM.rng(12);for(let i=0;i<1800;i++){c.fillStyle=i%2?'rgba(71,75,42,.045)':'rgba(255,253,222,.11)';c.fillRect(r()*192,r()*192,1+r(),1+r());}return this.c.createPattern(tile,'repeat');}
     emit(event){const r=Math.random;if(event.type==='land'){this.rings.push({x:C.playerX,y:C.ground-event.y,life:.20,max:.20,strength:event.strength||0,color:event.material==='metal'?'#dce4c7':event.material==='wood'?'#d6ae79':'#9ab8bd'});}if(event.type==='collision')this.shake=this.reduced?0:.25;if(['jump','land','collision','score'].includes(event.type)){let n=event.type==='collision'?14:event.type==='score'?7:8;for(let i=0;i<n;i++)this.particles.push({x:event.type==='score'?C.playerX+20:C.playerX+(r()-.5)*60,y:event.type==='score'?C.ground-(event.y||0)-155:C.ground-(event.y||0)-8,vx:(r()-.6)*150,vy:-35-r()*100,life:.4+r()*.35,max:.8,size:3+r()*7,type:event.type,color:event.type==='land'?(event.material==='metal'?['#e9bf7a','#e8e5c6'][i%2]:event.material==='wood'?'#cba16d':'#a7b7ba'):['#f8df9b','#fcf3da','#d9e8a0','#ed9a5d'][i%4]});}}
@@ -116,12 +116,32 @@
       }
       c.restore();
     }
+    billboardX(g){
+      if(g.distance<this.billboardLastDistance||g.score===0)this.billboardAnchor=null;
+      this.billboardLastDistance=g.distance;
+      if(this.billboardAnchor===null&&g.mode==='flying'&&g.score>=59&&g.score<=61)this.billboardAnchor=g.distance;
+      if(this.billboardAnchor===null)return null;
+      const x=1280-(g.distance-this.billboardAnchor)*.65;
+      return x < -440 ? null : x;
+    }
+    billboard(c,g){
+      const x=this.billboardX(g);if(x===null||!this.billboardImage.complete||!this.billboardImage.naturalWidth)return;
+      const y=176,w=390,h=w*this.billboardImage.naturalHeight/this.billboardImage.naturalWidth;
+      c.save();c.fillStyle='#1a2b39';c.fillRect(x-35,y+h+78,w+70,260);
+      for(const offset of [55,w-65]){c.fillStyle='#14232e';c.fillRect(x+offset,y+h,12,80);c.strokeStyle='#49606c';c.lineWidth=3;c.strokeRect(x+offset,y+h,12,80);}
+      c.fillStyle='#101a24';c.fillRect(x-9,y-9,w+18,h+18);c.strokeStyle='#4c606c';c.lineWidth=3;c.strokeRect(x-9,y-9,w+18,h+18);
+      c.drawImage(this.billboardImage,x,y,w,h);
+      for(const offset of [75,w-75]){c.strokeStyle='#16232d';c.lineWidth=7;c.beginPath();c.moveTo(x+offset,y-8);c.lineTo(x+offset,y-31);c.lineTo(x+offset+10,y-31);c.stroke();
+        const light=c.createRadialGradient(x+offset,y-5,2,x+offset,y+30,72);light.addColorStop(0,'#ffdc8f35');light.addColorStop(1,'#ffdc8f00');c.fillStyle=light;c.fillRect(x+offset-72,y-10,144,110);A.ellipse(c,x+offset,y-12,18,7,'#edc58b');}
+      c.restore();
+    }
     draw(g,dt){
       const frozen=g.phase==='paused';if(!frozen){this.time+=dt;for(const ring of this.rings){ring.life-=dt;if(g.phase==='playing')ring.x-=g.speed*dt;}this.rings=this.rings.filter(r=>r.life>0);for(const p of this.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=240*dt;p.life-=dt;}this.particles=this.particles.filter(p=>p.life>0);this.shake=Math.max(0,this.shake-dt);}
       const t=this.time,c=this.c,isTitle=g.phase==='title',d=isTitle?t*23:g.distance;
       c.setTransform(this.canvas.width/1280,0,0,this.canvas.height/720,0,0);c.save();if(this.shake>0)c.translate(Math.sin(t*130)*this.shake*16,Math.cos(t*180)*this.shake*9);
       this.weather=NRM.weatherAt(t);c.fillStyle=['#1c263c','#29223c','#152d40','#271f2b'][g.biome||0];c.fillRect(0,0,1280,720);c.save();if(!isTitle)c.translate(0,140);this.sceneLayers(c,d,t,g.biome||0,dt,frozen);c.restore();this.weatherBack(c,this.weather,t);
       if(window.Halloween)Halloween.backdrop(c,d,t,isTitle,this.reduced);
+      if(!isTitle)this.billboard(c,g);
       if(isTitle){
         // Hero is drawn with the same jointed artwork used during gameplay.
         A.ellipse(c,866,576,123,16,'#3b562b30');A.cat(c,{x:866,y:572,scale:1.85,time:t,state:'idle'});

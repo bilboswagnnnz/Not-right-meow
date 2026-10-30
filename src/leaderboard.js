@@ -119,28 +119,28 @@
    }catch{}
   }
   characterPortrait(character){
-   // A badge is shown only when the score service confirms the character
-   // that achieved the player's *best*, not the last-used character.
+   // Transparent cutout artwork is a sticker of the actual playable
+   // character. Never infer the best-score character from the active choice.
    const kind=character==='cookie'||character==='jim'?character:null;
-   const badge=document.createElement('span');
-   badge.className='leaderboard-character'+(kind?'':' unknown-character');
-   badge.title=kind?'Best score earned with '+(kind==='cookie'?'Cookie':'Jim'):'Character not recorded for this best score';
-   badge.setAttribute('role','img');
-   badge.setAttribute('aria-label',badge.title);
-   if(!kind){badge.textContent='?';return badge;}
+   const sticker=document.createElement('span');
+   sticker.className='leaderboard-character'+(kind?'':' unknown-character');
+   sticker.title=kind?'Best score achieved with '+(kind==='cookie'?'Cookie':'Jim'):'Character unknown for this historical score';
+   sticker.setAttribute('role','img');
+   sticker.setAttribute('aria-label',sticker.title);
+   if(!kind){sticker.textContent='?';return sticker;}
    const canvas=document.createElement('canvas');
-   canvas.width=72;canvas.height=72;
+   canvas.width=96;canvas.height=96;
    canvas.setAttribute('aria-hidden','true');
    const c=canvas.getContext('2d');
-   if(c&&window.PaperArt&&typeof PaperArt[kind==='cookie'?'cat':'jim']==='function'){
-    c.fillStyle=kind==='cookie'?'#342e46':'#293e50';
-    c.beginPath();c.arc(36,36,36,0,Math.PI*2);c.fill();
-    c.save();c.beginPath();c.arc(36,36,35,0,Math.PI*2);c.clip();
-    (kind==='cookie'?PaperArt.cat:PaperArt.jim)(c,{x:36,y:68,scale:.34,state:'idle',time:0});
+   const draw=window.PaperArt&&(kind==='cookie'?PaperArt.cat:PaperArt.jim);
+   if(c&&typeof draw==='function'){
+    // No background or badge frame: the empty pixels stay transparent.
+    c.save();
+    draw(c,{x:48,y:84,scale:.46,state:'idle',time:0});
     c.restore();
    }
-   badge.append(canvas);
-   return badge;
+   sticker.append(canvas);
+   return sticker;
   }
   bestScoreCharacter(row){
    // The server must return the character paired with the record score.

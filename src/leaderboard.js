@@ -122,12 +122,12 @@
    // Transparent cutout artwork is a sticker of the actual playable
    // character. Never infer the best-score character from the active choice.
    const kind=character==='cookie'||character==='jim'?character:null;
+   if(!kind)return null; // Old leaderboard entries have no reliable character metadata.
    const sticker=document.createElement('span');
-   sticker.className='leaderboard-character'+(kind?'':' unknown-character');
-   sticker.title=kind?'Best score achieved with '+(kind==='cookie'?'Cookie':'Jim'):'Character unknown for this historical score';
+   sticker.className='leaderboard-character';
+   sticker.title='Best score achieved with '+(kind==='cookie'?'Cookie':'Jim');
    sticker.setAttribute('role','img');
    sticker.setAttribute('aria-label',sticker.title);
-   if(!kind){sticker.textContent='?';return sticker;}
    const canvas=document.createElement('canvas');
    canvas.width=96;canvas.height=96;
    canvas.setAttribute('aria-hidden','true');
@@ -162,12 +162,13 @@
     const rankNumber=document.createElement('span');rankNumber.textContent=String(row.rank).padStart(2,'0');
     rankContents.append(rankNumber);
     if(champion)rankContents.append(badge());
-    rankContents.append(this.characterPortrait(this.bestScoreCharacter(row)));
+    const rankSticker=this.characterPortrait(this.bestScoreCharacter(row));
+    if(rankSticker)rankContents.append(rankSticker);
     rank.append(rankContents);
     const player=document.createElement('td');player.textContent=row.nickname+(data.me?.rank===row.rank?' (you)':'');
     if(champion){const title=document.createElement('small');title.className='champion-title';title.textContent='WORLD CHAMPION';player.append(title);}
     const score=document.createElement('td');score.textContent=String(row.score);tr.append(rank,player,score);body.append(tr);
-    if(row.rank<=3){const line=document.createElement('span');line.className='podium-row';const number=document.createElement('span');number.textContent=String(row.rank);if(champion)number.append(badge());number.append(this.characterPortrait(this.bestScoreCharacter(row)));const name=document.createElement('span');name.className='podium-name';name.textContent=row.nickname;const best=document.createElement('strong');best.textContent=row.score;line.append(number,name,best);podium.append(line);}
+    if(row.rank<=3){const line=document.createElement('span');line.className='podium-row';const number=document.createElement('span');number.textContent=String(row.rank);if(champion)number.append(badge());const podiumSticker=this.characterPortrait(this.bestScoreCharacter(row));if(podiumSticker)number.append(podiumSticker);const name=document.createElement('span');name.className='podium-name';name.textContent=row.nickname;const best=document.createElement('strong');best.textContent=row.score;line.append(number,name,best);podium.append(line);}
    }
    for(let i=data.entries.length+1;i<=3;i++){const line=document.createElement('span');line.className='podium-row vacant';line.textContent=i+'  ·  Place open';podium.append(line);}
    document.getElementById('leaderboard-me').textContent=data.me?`YOUR BEST ${data.me.best} · WORLD RANK #${data.me.rank}`:'Your first posted score earns your place.';

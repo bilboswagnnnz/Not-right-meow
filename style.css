@@ -117,3 +117,23 @@ body{background:#10151d;background-image:radial-gradient(ellipse at 70% 20%,#263
 #recovery-qr{display:block;width:min(240px,100%);height:auto;aspect-ratio:1;box-sizing:border-box;margin:12px auto;background:white;padding:8px;border-radius:8px}
 #recovery-qr[hidden],#recovery-qr-note[hidden]{display:none}
 #recovery-show-qr{width:100%;text-align:center;white-space:normal}
+
+/* A tiny portrait beside the actual best-score rank. Unknown historical
+   characters remain visibly unassigned until the backend has evidence. */
+.board-rank-with-character{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.leaderboard-character{display:inline-grid;place-items:center;vertical-align:middle;flex:0 0 auto;width:27px;height:27px;overflow:hidden;border-radius:50%;background:#313b4d;border:1px solid #66758b;box-shadow:0 1px 4px #0006}
+.leaderboard-character canvas{display:block;width:100%;height:100%}
+.leaderboard-character.unknown-character{font:700 12px system-ui;color:#8c97ab;border-style:dashed;background:#222836}
+.podium-row{grid-template-columns:72px minmax(0,1fr) auto}
+.podium-row>span:first-child{gap:4px}
+.podium-row .leaderboard-character{width:20px;height:20px}
+@media(max-width:900px){
+ .podium-row{grid-template-columns:57px minmax(0,1fr) auto}
+ .podium-row .leaderboard-character{width:17px;height:17px}
+}
+@media(max-width:570px){
+ .podium-row{grid-template-columns:45px minmax(0,1fr) auto}
+ .podium-row .leaderboard-character{width:14px;height:14px}
+ .board-rank-with-character{gap:4px}
+ .board-rank-with-character .leaderboard-character{width:21px;height:21px}
+}

@@ -3,9 +3,27 @@
 (function(){
 'use strict';
 const A=PaperArt,sprite=new Image();
+let spritePlacement=null;
 A.bigfootStatus='loading';
 A.bigfootReady=new Promise(resolve=>{
- sprite.onload=()=>{A.bigfootStatus='ready';resolve(true);};
+ sprite.onload=()=>{
+  // Measure transparent padding once; draw the entire image so no wheel is clipped.
+  const w=sprite.naturalWidth,h=sprite.naturalHeight;
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(sprite,0,0);
+  let left=w,top=h,right=-1,bottom=-1;
+  try{
+   const pixels=cx.getImageData(0,0,w,h).data;
+   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    if(pixels[(y*w+x)*4+3]===0)continue;
+    left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+   }
+  }catch(e){left=0;top=0;right=w-1;bottom=h-1;}
+  if(right<left){left=0;top=0;right=w-1;bottom=h-1;}
+  const unit=175/(bottom-top+1);
+  spritePlacement={x:-(left+right+1)*.5*unit,y:-(bottom+1)*unit,w:w*unit,h:h*unit};
+  A.bigfootStatus='ready';resolve(true);
+ };
  sprite.onerror=()=>{A.bigfootStatus='error';resolve(false);};
 });
 sprite.src=new URL('./bigfoot.png',document.currentScript.src).href;
@@ -25,8 +43,8 @@ A.bigfoot=function(c,{time=0,state='idle',vy=0,land=0,impact=0,death=0,balloon=0
   A.ellipse(c,-19,-77,7,17,'#edb596');
   A.path(c,'M0 0-6 9H6Z','#c37a65','#162430',2);c.restore();
  }
- // Trim the transparent margin when placing the sprite at its wheel contact point.
- c.drawImage(sprite,95,85,1060,1095,-84.7,-175,169.4,175);
+ // Full source image, aligned to the lowest visible wheel pixel.
+ const p=spritePlacement;c.drawImage(sprite,p.x,p.y,p.w,p.h);
  c.restore();
 };
 })();

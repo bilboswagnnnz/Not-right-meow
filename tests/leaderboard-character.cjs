@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
-function setup(){
+function setup(enableCharacterMetadata=false){
  const drawings=[];
  const art={
   cat:(context,opts)=>drawings.push({character:'cookie',opts}),
@@ -29,7 +29,7 @@ function setup(){
    return elements.get(id);
   }
  };
- const window={PaperArt:art};
+ const window={PaperArt:art,NRM_ENABLE_CHARACTER_METADATA:enableCharacterMetadata};
  const context={window,PaperArt:art,document,location:{search:''},URLSearchParams};
  vm.createContext(context);
  vm.runInContext(fs.readFileSync('src/leaderboard.js','utf8'),context);
@@ -60,8 +60,8 @@ test('character is read only from best-score metadata, never latest run',()=>{
  assert.equal(board.bestScoreCharacter({}),null);
 });
 
-test('run sends locked-in character to both start and finish',async()=>{
- const {board}=setup();
+test('run sends locked-in character to both start and finish when API supports it',async()=>{
+ const {board}=setup(true);
  board.profile={nickname:'Valid Player',token:'a'.repeat(64)};
  board.current=null;
  const captured=[];
@@ -75,4 +75,21 @@ test('run sends locked-in character to both start and finish',async()=>{
  await board.finishRun(12,20);
  assert.deepEqual(captured.map(v=>v.body.character),['jim','jim']);
  assert.deepEqual(captured.map(v=>v.body.action),['start','finish']);
+});
+
+test('without server support score submission stays in legacy format',async()=>{
+ const {board}=setup(false);
+ board.profile={nickname:'Player One',token:'b'.repeat(64)};
+ const captured=[];
+ board.request=async (method,body)=>{
+  captured.push(body);
+  return body.action==='start'?{runId:'r-2'}:{me:{best:9,rank:3},entries:[]};
+ };
+ board.render=()=>{};
+ board.beginRun('cookie');
+ await board.current.ready;
+ await board.finishRun(9,15);
+ assert.equal(captured.length,2);
+ assert.equal('character' in captured[0],false);
+ assert.equal('character' in captured[1],false);
 });

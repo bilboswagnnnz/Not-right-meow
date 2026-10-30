@@ -1,4 +1,4 @@
-/* Shared, opt-in scores. The browser token identifies this installation, not a person. */
+/* Shared automatic best scores. The browser token identifies this installation, not a person. */
 (function(){
  'use strict';
  const API='https://not-right-meow-scores.rareboot37.chatgpt.site/api/leaderboard';
@@ -14,7 +14,6 @@
    if(!/^[a-f0-9]{64}$/.test(this.profile.token||''))this.profile={};
    document.getElementById('welcome-profile').onsubmit=e=>{e.preventDefault();this.saveWelcome();};
    document.getElementById('nickname').value=this.profile.nickname||'';
-   document.getElementById('share-scores').checked=!!this.profile.enabled;
    document.getElementById('leaderboard-open').onclick=()=>this.open();
    document.getElementById('leaderboard-over').onclick=()=>this.open();
    document.getElementById('leaderboard-close').onclick=()=>this.dialog.close();
@@ -36,7 +35,6 @@
    const nickname=document.getElementById('welcome-name').value.trim().replace(/ +/g,' ');
    if(!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(nickname)){document.getElementById('welcome-error').textContent='Use 3–18 letters, numbers, spaces, _ or -.';return;}
    document.getElementById('nickname').value=nickname;
-   document.getElementById('share-scores').checked=document.getElementById('welcome-share').checked;
    this.saveProfile();
    if(!this.hasName()){document.getElementById('welcome-error').textContent=this.message.textContent;return;}
    this.welcome.close();
@@ -56,12 +54,11 @@
   open(){this.pause();this.returnFocus=document.activeElement;this.dialog.showModal();this.refresh();}
   saveProfile(){
    const nickname=document.getElementById('nickname').value.trim().replace(/ +/g,' ');
-   const enabled=document.getElementById('share-scores').checked;
-   if(enabled&&!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(nickname)){this.message.textContent='Use 3–18 letters, numbers, spaces, _ or -.';return;}
+   if(!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(nickname)){this.message.textContent='Use 3–18 letters, numbers, spaces, _ or -.';return;}
    let token=this.profile.token;
    if(!token){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);token=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');}
-   const next={nickname,enabled,token};
-   try{localStorage.setItem(KEY,JSON.stringify(next));this.profile=next;this.message.textContent=enabled?'Saved. Your next run will count toward the leaderboard.':'Automatic sharing is off. Your existing posted score stays on the board.';}
+   const next={nickname,token};
+   try{localStorage.setItem(KEY,JSON.stringify(next));this.profile=next;this.message.textContent='Saved. Your best score posts automatically.';}
    catch{this.message.textContent='Browser storage is blocked. Allow site storage to join the leaderboard.';}
   }
   async refresh(){
@@ -84,7 +81,7 @@
   beginRun(){
    const job={ready:null,runId:null,error:null,score:0,elapsed:0,busy:false};this.current=job;this.pending=null;
    document.getElementById('score-retry').hidden=true;
-   if(!this.profile.enabled||!this.profile.token){this.status.textContent='Open Leaderboard to share your next run.';return;}
+   if(!this.hasName()||!this.profile.token){this.status.textContent='Enter your leaderboard name before playing.';return;}
    if(new URLSearchParams(location.search).has('qa')){this.status.textContent='Practice / QA runs are not submitted.';return;}
    this.status.textContent='Connecting this run to the leaderboard…';
    job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION}).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});

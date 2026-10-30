@@ -45,8 +45,7 @@
         <form id="welcome-profile">
           <label for="welcome-name" class="sr-only">Leaderboard Name</label>
           <div class="nickname-row"><input id="welcome-name" maxlength="18" minlength="3" required autocomplete="off" placeholder="Type your name" aria-describedby="welcome-note welcome-error"></div>
-          <label class="sharing-choice"><input id="welcome-share" type="checkbox"> Share my scores on the public leaderboard</label>
-          <p id="welcome-note">3–18 letters, numbers, spaces, _ or -. Use a nickname, not your full name. Sharing is optional.</p>
+          <p id="welcome-note">3–18 letters, numbers, spaces, _ or -. Use a nickname, not your full name. Your name and best score appear publicly on the leaderboard.</p>
           <p id="welcome-error" role="status"></p>
           <button class="primary" type="submit">SAVE &amp; PLAY <span aria-hidden="true">→</span></button>
         </form>
@@ -56,7 +55,7 @@
         <div class="board-summary"><strong id="leaderboard-me">Your first posted score earns your place.</strong><button id="leaderboard-refresh" class="text-button">REFRESH ↻</button></div>
         <p id="leaderboard-message" role="status" aria-live="polite">Loading scores…</p>
         <div class="board-scroll"><table><thead><tr><th scope="col">RANK</th><th scope="col">PLAYER</th><th scope="col">BEST</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
-        <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><label class="sharing-choice"><input id="share-scores" type="checkbox"> Post my future runs automatically</label><p id="nickname-note">Nicknames and scores are public. Use 3–18 letters, numbers, spaces, _ or -. No account needed. Your identity stays in this browser; clearing site data creates a new player. Earlier local scores cannot be imported.</p></form>
+        <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><p id="nickname-note">Your name and best score are posted automatically to the public leaderboard. Use 3–18 letters, numbers, spaces, _ or -. No account needed. Your identity stays in this browser; clearing site data creates a new player. Earlier local scores cannot be imported.</p></form>
       </dialog>
       <div id="run-tip" class="run-tip" hidden><kbd>SPACE</kbd> jump near the edge · Land before jumping again.</div>
       <div id="pace-hud" class="pace-hud" hidden><span id="pace-label">WARMUP</span><span class="pace-track"><span id="pace-fill"></span></span><time id="run-clock">0:00</time></div>

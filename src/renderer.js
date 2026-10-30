@@ -123,18 +123,31 @@
       this.billboardLastDistance=g.distance;
       if(this.billboardAnchor===null&&g.mode==='running'&&g.score>=44&&g.score<=46)this.billboardAnchor=g.distance;
       if(this.billboardAnchor===null)return null;
-      const x=1280-(g.distance-this.billboardAnchor)*.65;
+      const x=1280-(g.distance-this.billboardAnchor)*.50;
       return x < -440 ? null : x;
     }
     billboard(c,g){
       const x=this.billboardX(g);if(x===null||!this.billboardImage.complete||!this.billboardImage.naturalWidth)return;
-      const y=176,w=390,h=w*this.billboardImage.naturalHeight/this.billboardImage.naturalWidth;
+      const y=190,w=320,h=w*this.billboardImage.naturalHeight/this.billboardImage.naturalWidth;
       c.save();c.fillStyle='#1a2b39';c.fillRect(x-35,y+h+78,w+70,260);
       for(const offset of [55,w-65]){c.fillStyle='#14232e';c.fillRect(x+offset,y+h,12,80);c.strokeStyle='#49606c';c.lineWidth=3;c.strokeRect(x+offset,y+h,12,80);}
       c.fillStyle='#101a24';c.fillRect(x-9,y-9,w+18,h+18);c.strokeStyle='#4c606c';c.lineWidth=3;c.strokeRect(x-9,y-9,w+18,h+18);
       c.drawImage(this.billboardImage,x,y,w,h);
-      for(const offset of [75,w-75]){c.strokeStyle='#16232d';c.lineWidth=7;c.beginPath();c.moveTo(x+offset,y-8);c.lineTo(x+offset,y-31);c.lineTo(x+offset+10,y-31);c.stroke();
-        const light=c.createRadialGradient(x+offset,y-5,2,x+offset,y+30,72);light.addColorStop(0,'#ffdc8f35');light.addColorStop(1,'#ffdc8f00');c.fillStyle=light;c.fillRect(x+offset-72,y-10,144,110);A.ellipse(c,x+offset,y-12,18,7,'#edc58b');}
+      // Two top-mounted floodlights cast warm, downward fans over the poster.
+      for(const offset of [72,w-72]){
+        const lx=x+offset,ly=y-29;
+        c.save();c.beginPath();c.rect(x,y,w,h);c.clip();
+        const wash=c.createLinearGradient(0,y,0,y+h);
+        wash.addColorStop(0,'#ffe6ab60');wash.addColorStop(.48,'#ffe6ab24');wash.addColorStop(1,'#ffe6ab00');
+        c.fillStyle=wash;c.beginPath();c.moveTo(lx-12,ly+8);c.lineTo(lx+12,ly+8);c.lineTo(lx+112,y+h);c.lineTo(lx-112,y+h);c.closePath();c.fill();c.restore();
+        // Short visible beam between each lamp and the billboard's top edge.
+        const beam=c.createLinearGradient(0,ly+8,0,y+4);beam.addColorStop(0,'#ffe6ab55');beam.addColorStop(1,'#ffe6ab16');
+        c.fillStyle=beam;c.beginPath();c.moveTo(lx-10,ly+8);c.lineTo(lx+10,ly+8);c.lineTo(lx+22,y);c.lineTo(lx-22,y);c.closePath();c.fill();
+        c.strokeStyle='#16232d';c.lineWidth=6;c.beginPath();c.moveTo(lx-19,y-9);c.lineTo(lx-19,ly-12);c.lineTo(lx,ly-12);c.lineTo(lx,ly);c.stroke();
+        c.strokeStyle='#82919a';c.lineWidth=2;c.beginPath();c.moveTo(lx-19,y-9);c.lineTo(lx-19,ly-12);c.lineTo(lx,ly-12);c.stroke();
+        c.fillStyle='#263b49';c.strokeStyle='#91a0a7';c.lineWidth=2;c.beginPath();c.moveTo(lx-13,ly-5);c.lineTo(lx+13,ly-5);c.lineTo(lx+21,ly+7);c.lineTo(lx-21,ly+7);c.closePath();c.fill();c.stroke();
+        c.save();c.shadowColor='#ffe1a0';c.shadowBlur=12;A.ellipse(c,lx,ly+8,17,4,'#ffedbf');c.restore();
+      }
       c.restore();
     }
     fallScene(c,g,t){

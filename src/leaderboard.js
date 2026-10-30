@@ -76,7 +76,7 @@
     localStorage.setItem(KEY,JSON.stringify(next));this.profile=next;
     document.getElementById('welcome-name').value=nickname;
     this.message.textContent=next.pendingNickname
-     ?'Saved on this device. Start a new run to update your online leaderboard name.'
+     ?'Saved on this device. Complete a new scored run to update your online leaderboard name.'
      :'Name saved on this device.';
    }
    catch{this.message.textContent='Browser storage is blocked. Allow site storage to join the leaderboard.';}

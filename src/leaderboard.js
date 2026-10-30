@@ -68,8 +68,17 @@
    if(!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(nickname)){this.message.textContent='Use 3–18 letters, numbers, spaces, _ or -.';return;}
    let token=this.profile.token;
    if(!token){const bytes=new Uint8Array(32);crypto.getRandomValues(bytes);token=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');}
-   const next={nickname,token};
-   try{localStorage.setItem(KEY,JSON.stringify(next));this.profile=next;this.message.textContent='Saved. Your best score posts automatically.';}
+   const changed=this.profile.nickname!==nickname;
+   // Name changes are only sent to the score server as part of the next real run.
+   // Do not falsely claim that saving browser storage instantly renames a score.
+   const next={nickname,token,pendingNickname:changed||this.profile.pendingNickname===true};
+   try{
+    localStorage.setItem(KEY,JSON.stringify(next));this.profile=next;
+    document.getElementById('welcome-name').value=nickname;
+    this.message.textContent=next.pendingNickname
+     ?'Saved on this device. Start a new run to update your online leaderboard name.'
+     :'Name saved on this device.';
+   }
    catch{this.message.textContent='Browser storage is blocked. Allow site storage to join the leaderboard.';}
   }
   async refresh(){
@@ -95,7 +104,22 @@
     }
    }
   }
+  syncServerNickname(data){
+   // When the score server confirms a nickname, sync it to any other device
+   // sharing this player token. Never revert a locally edited, pending name.
+   const serverName=data.me?.nickname||data.entries?.find(row=>row.rank===data.me?.rank)?.nickname;
+   if(!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(serverName||'')||!this.profile.token)return;
+   if(this.profile.pendingNickname && serverName!==this.profile.nickname)return;
+   if(serverName===this.profile.nickname && !this.profile.pendingNickname)return;
+   const next={...this.profile,nickname:serverName,pendingNickname:false};
+   try{
+    localStorage.setItem(KEY,JSON.stringify(next));this.profile=next;
+    document.getElementById('nickname').value=serverName;
+    document.getElementById('welcome-name').value=serverName;
+   }catch{}
+  }
   render(data){
+   this.syncServerNickname(data);
    if(data.me&&Number.isFinite(Number(data.me.best)))this.onRemoteBest?.(Number(data.me.best));
    const body=document.getElementById('leaderboard-rows');body.replaceChildren();
    if(!data.entries.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=3;td.className='board-empty';td.textContent='The skyline is yours. Be the first to post a score.';tr.append(td);body.append(tr);}
@@ -201,7 +225,7 @@
    if(!this.hasName()||!this.profile.token){this.status.textContent='Enter your leaderboard name before playing.';return;}
    if(new URLSearchParams(location.search).has('qa')){this.status.textContent='Practice / QA runs are not submitted.';return;}
    this.status.textContent='Connecting this run to the leaderboard…';
-   job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION},job.token).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});
+   job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION},job.token).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';if(this.profile.pendingNickname&&this.profile.token===job.token)this.refresh();}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});
   }
   async finishRun(score,elapsed){
    const job=this.current;if(!job?.ready)return;

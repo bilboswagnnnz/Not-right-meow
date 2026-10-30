@@ -15,6 +15,9 @@
   <script defer src="./src/audio.js?v=close-call-1"></script>
   <script defer src="./src/renderer.js?v=close-call-1"></script>
   <script defer src="./src/leaderboard.js?v=recovery-1"></script>
+  <script defer src="./assets/qrcode.js?v=qr-1"></script>
+  <script defer src="./src/pairing-config.js?v=qr-1"></script>
+  <script defer src="./src/pairing.js?v=qr-1"></script>
   <script defer src="./src/game.js?v=close-call-1"></script>
 </head>
 <body>
@@ -59,7 +62,8 @@
           <p id="welcome-error" role="status"></p>
           <button class="primary" type="submit">SAVE &amp; PLAY <span aria-hidden="true">→</span></button>
         </form>
-        <button id="welcome-import" class="text-button" type="button">ALREADY PLAY HERE? LINK WITH RECOVERY CODE</button>
+        <button id="welcome-qr" class="text-button" type="button">LINK WITH PHONE (SCAN QR)</button>
+        <button id="welcome-import" class="text-button" type="button">USE A RECOVERY CODE INSTEAD</button>
       </dialog>
       <dialog id="leaderboard-dialog" aria-labelledby="leaderboard-title">
         <div class="board-heading"><div><h2 id="leaderboard-title">World Champion</h2></div><button id="leaderboard-close" class="tool" aria-label="Close leaderboard">✕</button></div>
@@ -67,6 +71,7 @@
         <p id="leaderboard-message" role="status" aria-live="polite">Loading scores…</p>
         <div class="board-scroll"><table><thead><tr><th scope="col">RANK</th><th scope="col">PLAYER</th><th scope="col">BEST</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
         <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><p id="nickname-note">Your name and best score are posted automatically to the public leaderboard. Use 3–18 letters, numbers, spaces, _ or -. Your nickname and best score can follow you between devices using your private recovery code. Keep the code secret.</p></form>
+        <button id="leaderboard-qr" class="text-button" type="button">QUICK LINK WITH PHONE (QR)</button>
         <button id="leaderboard-recovery" class="text-button" type="button">LINK DEVICES / RECOVERY CODE</button>
       </dialog>
       <dialog id="recovery-dialog" aria-labelledby="recovery-title">
@@ -84,6 +89,23 @@
         </form>
         <p id="recovery-status" role="status" aria-live="polite"></p>
         <p class="recovery-warning">Anyone with your code can use your player identity and submit scores. Keep it private. Linking replaces this device's current leaderboard identity; it does not merge old accounts.</p>
+      </dialog>
+
+      <dialog id="pair-pc-dialog" aria-labelledby="pair-pc-title">
+        <div class="board-heading"><h2 id="pair-pc-title">Link your PC with your phone.</h2><button id="pair-pc-close" class="tool" type="button" aria-label="Close QR link">✕</button></div>
+        <p>Scan this QR code with your iPhone camera. Open the game link, then tap <strong>Approve PC</strong> on your phone. Your existing player name and online best will appear here.</p>
+        <img id="pair-qr" alt="Scan this QR with your phone to link this PC" hidden>
+        <p id="pair-pc-status" role="status" aria-live="polite">Preparing link…</p>
+        <label for="pair-url">If the camera cannot scan it, you can open this one-time link on your phone:</label>
+        <textarea id="pair-url" rows="3" readonly aria-label="One-time device linking URL"></textarea>
+        <p class="pair-note">This QR expires after two minutes and works once. You can still use your recovery code as a backup.</p>
+      </dialog>
+      <dialog id="pair-phone-dialog" aria-labelledby="pair-phone-title">
+        <div class="board-heading"><h2 id="pair-phone-title">Approve device link?</h2><button id="pair-phone-close" class="tool" type="button" aria-label="Close device approval">✕</button></div>
+        <p id="pair-phone-user"></p>
+        <p id="pair-phone-status" role="status" aria-live="polite"></p>
+        <button id="pair-phone-approve" class="primary" type="button">APPROVE PC</button>
+        <p class="pair-note">Only approve your own PC. Approval shares access to your leaderboard identity with that device; you can use both devices afterward.</p>
       </dialog>
       <div id="fall-controls" hidden aria-label="Freefall steering"><button id="slide-left" aria-label="Hold to slide left"><span aria-hidden="true">←</span><small>HOLD LEFT</small></button><button id="slide-right" aria-label="Hold to slide right"><span aria-hidden="true">→</span><small>HOLD RIGHT</small></button></div>
       <div id="run-tip" class="run-tip" hidden><kbd>SPACE</kbd> jump near the edge · Land before jumping again.</div>

@@ -24,6 +24,32 @@ function pumpkin(c,x,y,s){
  a.ellipse(c,-15,-20,20,25,'#bd592d','#302539',3);a.ellipse(c,15,-20,20,25,'#c56731','#302539',3);a.ellipse(c,0,-20,21,27,'#e0833c','#673e38',2);
  c.save();c.shadowColor='#eab978';c.shadowBlur=12;a.path(c,'M-23-24l12-9 5 12Z M6-21l5-12 12 9Z M-21-10l9 3 5-4 6 6 8-6 6 4 9-3q-22 29-43 0Z','#f6c378',null);c.restore();c.restore();
 }
+
+function skeleton(c,x,y,s,t){
+ const a=A(),beat=t*4.4,sway=Math.sin(beat)*.12;
+ c.save();c.translate(x,y);c.scale(s,s);c.rotate(sway);
+ const bone=(p)=>{a.line(c,p,'#252638',9);a.line(c,p,'#d8d6bf',5);};
+ // Jointed paper bones: alternating elbows, knees, and feet.
+ const left=Math.sin(beat),right=Math.sin(beat+Math.PI);
+ bone('M0-82V-35');
+ for(let i=0;i<3;i++){const yy=-74+i*10;a.line(c,`M-17 ${yy-3}Q0 ${yy+10} 17 ${yy-3}`,'#d8d6bf',4);}
+ bone('M-13-35L0-28 13-35');
+ for(const [side,v] of [[-1,left],[1,right]]){
+  const ex=side*(28+v*7),ey=-65+v*14,hx=side*(39-v*5),hy=-90+v*18;
+  bone(`M${side*15}-80L${ex} ${ey} ${hx} ${hy}`);
+  a.ellipse(c,hx,hy,5,6,'#e8dfc9','#252638',2);
+  const kx=side*(14-v*7),ky=-12-Math.max(0,v)*9,fx=side*(23+v*8),fy=-Math.max(0,v)*12;
+  bone(`M${side*8}-30L${kx} ${ky} ${fx} ${fy}`);
+  bone(`M${fx} ${fy}l${side*9} 0`);
+ }
+ c.save();c.translate(0,-103);c.rotate(-sway*.7);
+ a.path(c,'M-17 1Q-24-24 0-25T17 1L11 10H-11Z','#eee3cc','#252638',3);
+ a.ellipse(c,-8,-7,5,6,'#29283b');a.ellipse(c,8,-7,5,6,'#29283b');
+ a.path(c,'M0-3l-3 6h6Z','#29283b',null);
+ for(const xx of [-6,0,6])a.line(c,`M${xx} 5v5`,'#645968',1.5);
+ c.restore();c.restore();
+}
+
 function backdrop(c,d,t,title,reduced){
  if(!active)return;const a=A(),clock=reduced?0:t;c.save();
  c.fillStyle='#311b4525';c.fillRect(0,0,1280,720);
@@ -33,6 +59,14 @@ function backdrop(c,d,t,title,reduced){
  c.globalAlpha=1;
  ghost(c,title?735:((950-d*.13-clock*9)%1510+1510)%1510-100,title?320:335,title?1.15:.7,clock,title?.65:.3);
  ghost(c,title?1140:((1450-d*.09+clock*8)%1590+1590)%1590-100,title?390:270,title?.8:.55,clock+3,title?.5:.24);
+ // Background dancers are cosmetic and render behind all gameplay geometry.
+ c.globalAlpha=title?.6:.48;
+ for(let i=0;i<4;i++){
+  const x=title?730+i*140:((i*365+180-d*.16)%1560+1560)%1560-140;
+  const y=title?470:455+(i%2)*30;
+  a.path(c,`M${x-49} ${y+4}h98v12h-98Z`,'#283546','#65717a',2);
+  skeleton(c,x,y,.63+(i%2)*.08,clock+i*.32);
+ }
  // A loose flock of bats in the distant upper sky.
  c.globalAlpha=title?.65:.32;
  for(let i=0;i<4;i++){const x=title?790+i*43:((i*67+670-d*.055-clock*13)%1600+1600)%1600-100,y=title?185+i%2*24:120+i%3*20,f=Math.sin(clock*5+i)*5;

@@ -142,21 +142,27 @@
     this.recoveryStatus.textContent='Clipboard access is blocked. Select and copy the code above.';
    }
   }
-  importRecovery(){
-   let next;
-   try{next=this.parseRecovery(document.getElementById('recovery-entry').value);}
-   catch(e){this.recoveryStatus.textContent=e.message;return;}
+  adoptLinkedProfile(next){
+   if(!/^[a-f0-9]{64}$/.test(next?.token||'')||!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(next?.nickname||''))
+    return false;
    const changed=this.profile.token!==next.token;
-   if(changed&&this.hasName()&&!confirm('Link to '+next.nickname+'? This replaces the current player on this device. Existing leaderboard entries are not merged.'))return;
+   if(changed&&this.hasName()&&!confirm('Link to '+next.nickname+'? This replaces the current player on this device. Existing leaderboard entries are not merged.'))return false;
    try{localStorage.setItem(KEY,JSON.stringify(next));}
-   catch{this.recoveryStatus.textContent='Browser storage is blocked. Allow site storage before linking.';return;}
+   catch{this.message.textContent='Browser storage is blocked. Allow site storage to link devices.';return false;}
    this.profile=next;
    document.getElementById('nickname').value=next.nickname;
    document.getElementById('welcome-name').value=next.nickname;
    if(changed){this.current=null;this.pending=null;this.onIdentityChanged?.();}
-   const fromWelcome=this.recoveryFromWelcome;this.recoveryFromWelcome=false;this.recovery.close();
    this.status.textContent='Player '+next.nickname+' linked on this device.';
    this.refresh();
+   return true;
+  }
+  importRecovery(){
+   let next;
+   try{next=this.parseRecovery(document.getElementById('recovery-entry').value);}
+   catch(e){this.recoveryStatus.textContent=e.message;return;}
+   if(!this.adoptLinkedProfile(next)){this.recoveryStatus.textContent='Not linked. Your existing player was kept, or browser storage is unavailable.';return;}
+   const fromWelcome=this.recoveryFromWelcome;this.recoveryFromWelcome=false;this.recovery.close();
    if(fromWelcome){const ready=this.onReady;this.onReady=null;ready?.();}
   }
   beginRun(){

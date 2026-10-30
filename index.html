@@ -81,6 +81,9 @@
           <label for="recovery-code">YOUR PRIVATE RECOVERY CODE</label>
           <textarea id="recovery-code" rows="3" readonly spellcheck="false" autocomplete="off" aria-label="Your private recovery code"></textarea>
           <button id="recovery-copy" class="primary" type="button">COPY MY CODE</button>
+          <button id="recovery-show-qr" class="text-button" type="button">SHOW RECOVERY CODE AS QR</button>
+          <img id="recovery-qr" alt="QR containing your private recovery code" hidden>
+          <p id="recovery-qr-note" hidden>Private: anyone who scans this can use your player identity. Do not share pictures of it.</p>
         </div>
         <form id="recovery-import">
           <label for="recovery-entry">HAVE A CODE FROM ANOTHER DEVICE?</label>

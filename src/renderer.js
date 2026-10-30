@@ -255,7 +255,7 @@
         const dying=g.phase==='dying'||g.phase==='gameover',jumpY=dying?g.deathY:g.y;
         const under=(g.platforms||[]).filter(p=>p.x<C.playerX&&p.x+p.w>C.playerX&&p.h<=jumpY+1).reduce((h,p)=>Math.max(h,p.h),0);
         A.ellipse(c,C.playerX,C.ground-under+3,Math.max(19,47-(jumpY-under)*.12),6,'#3b51273a');
-        (this.character==='bigfoot'?A.bigfoot:this.character==='jim'?A.jim:A.cat)(c,{x:C.playerX-(dying?Math.min(22,g.deathTime*30):0),y:C.ground-jumpY-5,time:t,state:dying?'collision':g.animation,vy:g.vy,land:g.landTime,impact:g.landStrength,death:g.deathTime,balloon:g.balloon,scale:1-.28*g.balloon});
+        (this.character==='bigfoot'?A.bigfoot:this.character==='jim'?A.jim:A.cat)(c,{x:C.playerX-(dying?Math.min(22,g.deathTime*30):0),y:C.ground-jumpY-(this.character==='bigfoot'?0:5),time:t,state:dying?'collision':g.animation,vy:g.vy,land:g.landTime,impact:g.landStrength,death:g.deathTime,balloon:g.balloon,scale:1-.28*g.balloon});
         if(dying){for(let i=0;i<3;i++){let a=t*3+i*2.094;A.star(c,C.playerX+Math.cos(a)*51,C.ground-jumpY-187+Math.sin(a)*12,7,'#ffdf77',a);}}
         c.restore();
       }

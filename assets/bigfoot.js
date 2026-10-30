@@ -15,7 +15,8 @@ A.bigfootReady=new Promise(resolve=>{
   try{
    const pixels=cx.getImageData(0,0,w,h).data;
    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    if(pixels[(y*w+x)*4+3]===0)continue;
+    // Ignore near-transparent export noise when finding the tire contact edge.
+    if(pixels[(y*w+x)*4+3]<32)continue;
     left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
    }
   }catch(e){left=0;top=0;right=w-1;bottom=h-1;}
@@ -26,7 +27,7 @@ A.bigfootReady=new Promise(resolve=>{
  };
  sprite.onerror=()=>{A.bigfootStatus='error';resolve(false);};
 });
-sprite.src=new URL('./bigfoot.png',document.currentScript.src).href;
+sprite.src=new URL('./bigfoot.png?v=front-wheels-1',document.currentScript.src).href;
 A.bigfoot=function(c,{time=0,state='idle',vy=0,land=0,impact=0,death=0,balloon=0,scale=1,x=0,y=0}={}){
  if(A.bigfootStatus!=='ready')return;
  c.save();c.translate(x,y);c.scale(scale,scale);

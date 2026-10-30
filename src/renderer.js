@@ -154,7 +154,7 @@
         for(const p of g.platforms||[])if(p.x<1500&&p.x+p.w>-200){A.platform(c,p,C.ground,t);if(p.takeoff){c.fillStyle='#e9c38b';c.font='bold 15px monospace';c.fillText(p.serial+' / BALLOON DEPARTURE',p.x+12,C.ground-p.h+40);}}
         for(const o of g.gates||[])if(o.x<1500&&o.x+o.w>-160)this.airGate(c,o,g);
         for(const o of g.obstacles)A.obstacle(c,o,C.ground,t);
-        if(g.mode==='flying'){const floor=C.ground-g.flightBase,ceil=floor-NRM.FLIGHT.ceiling;c.fillStyle='#152a3e55';c.fillRect(0,floor,1280,500);c.fillRect(0,ceil-500,1280,500);A.line(c,`M0 ${floor}H1280M0 ${ceil}H1280`,'#c7996755',2);}
+        if(g.mode==='flying'){const floor=C.ground-g.flightBase,ceil=floor-NRM.FLIGHT.ceiling;c.fillStyle='#152a3e55';c.fillRect(0,floor,1280,500);c.fillRect(0,ceil-500,1280,500);A.line(c,`M0 ${ceil}H1280`,'#c7996755',2);}
 
         const dying=g.phase==='dying'||g.phase==='gameover',jumpY=dying?g.deathY:g.y;
         const under=(g.platforms||[]).filter(p=>p.x<C.playerX&&p.x+p.w>C.playerX&&p.h<=jumpY+1).reduce((h,p)=>Math.max(h,p.h),0);

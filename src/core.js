@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const C=Object.freeze({width:1280,height:720,ground:580,playerX:300,gravity:2400,jumpVelocity:820,initialSpeed:470,maxSpeed:860,step:1/120});
-const FLIGHT=Object.freeze({gravity:800,lift:270,bodyHeight:118,halfWidth:29,floorMargin:8,ceiling:560});
+const FLIGHT=Object.freeze({gravity:800,lift:270,bodyHeight:118,halfWidth:29,visualHeight:140,viewportBottom:-85,ceiling:560});
 const BIOMES=['RAIL YARD','ROOFTOPS','HARBOR','FOUNDRY'];
 // Each chapter is a different traversal, not a bag of ground obstacles.
 // [surface, change in elevation]; widths and gaps are tuned below.
@@ -136,7 +136,10 @@ class Game{
    if(C.playerX+FLIGHT.halfWidth>o.x&&C.playerX-FLIGHT.halfWidth<o.x+o.w&&(this.y<o.low||this.y+FLIGHT.bodyHeight>o.high)){this.die({kind:o.kind});return;}
    if(!o.scored&&o.x+o.w<C.playerX-FLIGHT.halfWidth){o.scored=true;this.flightPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});}
   }
-  if(this.y<this.flightBase+FLIGHT.floorMargin||this.y+FLIGHT.bodyHeight>this.flightBase+FLIGHT.ceiling){this.die({kind:'airspace'});return;}
+  // Flight camera settles at base+60; character anchor is 5 px above its feet.
+  // Screen bottom is therefore base-85. Allow the entire tilted character
+  // (140 px conservative visual extent, no balloon) to leave before dying.
+  if(this.y+FLIGHT.visualHeight<this.flightBase+FLIGHT.viewportBottom||this.y+FLIGHT.bodyHeight>this.flightBase+FLIGHT.ceiling){this.die({kind:'airspace'});return;}
   this.gates=this.gates.filter(o=>o.x+o.w>-160);
   if(this.flightPassed===50){this.mode='landing';this.modeTime=0;this.launchY=this.y;this.gates=[];this.chapter='ROOFTOP APPROACH';this.returnRoof={kind:'roof',x:800,w:680,h:this.flightBase+90,biome:1,chapter:-2,name:'ROOFTOP RETURN',serial:this.score,scored:true,recovery:true,variant:0};this.platforms=[this.returnRoof];this.events.push({type:'approach',name:'50 AIR GAPS CLEARED — LANDING AHEAD'});return;}
   const last=this.gates[this.gates.length-1];if(!last||last.x+last.w<1700)this.appendFlightGate();

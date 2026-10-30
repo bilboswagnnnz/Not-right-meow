@@ -30,6 +30,6 @@ for(let seed=1;seed<=80;seed++){
 }
 // Controlled collision probes of the actual flight update, both sides and world bounds.
 function airborne(){const g=new Game(rng(17));g.start();for(let n=0;g.mode!=='flying'&&n<20000;n++){pilot(g);g.update(C.step);g.drainEvents();}assert.equal(g.mode,'flying');return g;}
-for(const where of ['top','bottom','ceiling','floor']){const g=airborne(),o=g.gates[0];o.x=290;g.vy=0;g.y=where==='top'?o.high-FLIGHT.bodyHeight+5:where==='bottom'?o.low-5:where==='ceiling'?g.flightBase+FLIGHT.ceiling: g.flightBase-5;if(['floor','ceiling'].includes(where))g.gates=[];g.update(C.step);assert.equal(g.phase,'dying',where+' collision');g.start();assert.equal(g.mode,'running');assert.equal(g.score,0);assert.equal(g.balloon,0);}
+for(const where of ['top','bottom','ceiling','floor']){const g=airborne(),o=g.gates[0];o.x=290;g.vy=0;g.y=where==='top'?o.high-FLIGHT.bodyHeight+5:where==='bottom'?o.low-5:where==='ceiling'?g.flightBase+FLIGHT.ceiling: g.flightBase+FLIGHT.viewportBottom-FLIGHT.visualHeight-5;if(['floor','ceiling'].includes(where))g.gates=[];g.update(C.step);assert.equal(g.phase,'dying',where+' collision');g.start();assert.equal(g.mode,'running');assert.equal(g.score,0);assert.equal(g.balloon,0);}
 const g=airborne();assert(g.jump());assert(!g.jump(),'same instant flap blocked');g.update(.13);assert(g.jump(),'new airborne press lifts');assert.equal(g.vy,FLIGHT.lift);
 console.log(JSON.stringify({passed:true,runs,airClears,flightTypes:[...kinds],transitions:'50→flight→100→ground; 150→flight→200→ground',collisionProbes:4}));

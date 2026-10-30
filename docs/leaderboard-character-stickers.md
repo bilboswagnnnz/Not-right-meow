@@ -4,6 +4,12 @@ The game now renders small **transparent cutout stickers** using its existing Co
 
 **Important: the existing public leaderboard service currently has no character recording in the game repository.** Frontend changes do not by themselves make this feature work on live scores. The score service must be modified separately (its code is not in this repository).
 
+## Deployment safeguard
+
+The game intentionally leaves `window.NRM_ENABLE_CHARACTER_METADATA` **off** until the leaderboard backend supports character data. Existing score submissions therefore keep their original format. Once the score server has been upgraded, set `window.NRM_ENABLE_CHARACTER_METADATA = true;` **before** `src/leaderboard.js` loads (for example in a tiny game config script) and update the script cache version. Do not enable it before the server is ready.
+
+Until then, the transparent stickers render only if the leaderboard API happens to provide confirmed `bestCharacter` metadata. Existing scores and new runs continue functioning, but the full feature is **not live**.
+
 ## Server/API requirements
 
 The current API endpoint is `https://not-right-meow-scores.rareboot37.chatgpt.site/api/leaderboard`.

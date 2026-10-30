@@ -81,3 +81,8 @@ body{background:#10151d;background-image:radial-gradient(ellipse at 70% 20%,#263
  .topline{top:3%;left:3%;right:3%}.scoreboard{padding:4px 8px;gap:9px;min-width:120px}.scoreboard strong{font-size:18px}.tool{width:29px;height:29px}.tool svg{width:17px}.label{font-size:7px}.place-label{display:none}
  #fall-controls button{min-width:66px;min-height:50px}.paper-card{padding:14px 22px;min-width:250px}.paper-card h2{font-size:25px;margin:8px 0}.paper-card p{font-size:11px;margin:6px 0}.results{padding:8px 0;margin-bottom:10px}
 }
+
+/* Minimal title screen: one action and one control hint. */
+#title-screen .title-copy{top:31%}
+#title-screen h1{margin:0 0 clamp(18px,3cqw,40px)}
+#title-screen .intro-controls{font-size:clamp(7px,.85cqw,12px);letter-spacing:1px}

@@ -1,22 +1,93 @@
 /* Original 100 BPM electronic / seasonal 84 BPM haunted loop, synthesized locally in Web Audio.
-   All voices are local; no samples, external music, downloads or dependencies. */
+   User-supplied opening MP3 plays once per page session, followed by the original loop. */
 (function(){
 'use strict';
 class AudioEngine{
- constructor(){this.halloween=!!window.Halloween?.active;this.ctx=null;this.sfx=true;this.music=true;this.playing=false;this.notes=[];this.step=0;this.next=0;this.failed=false;}
- async unlock(){try{if(!this.ctx){const AC=window.AudioContext||window.webkitAudioContext;this.ctx=new AC();this.master=this.ctx.createGain();this.master.gain.value=.48;const comp=this.ctx.createDynamicsCompressor();this.master.connect(comp);comp.connect(this.ctx.destination);this.timer=setInterval(()=>this.tick(),25);}if(this.ctx.state==='suspended')await this.ctx.resume();return this.ctx.state==='running';}catch(e){this.failed=true;return false;}}
+ constructor(){this.halloween=!!window.Halloween?.active;this.ctx=null;this.sfx=true;this.music=true;this.playing=false;this.notes=[];this.step=0;this.next=0;this.failed=false;this.intro=null;this.introDone=false;this.introPending=false;this.introWatchdog=null;this.introAttempt=0;}
+ async unlock(){
+  try{
+   if(!this.ctx){
+    const AC=window.AudioContext||window.webkitAudioContext;this.ctx=new AC();
+    this.master=this.ctx.createGain();this.master.gain.value=.48;
+    const comp=this.ctx.createDynamicsCompressor();this.master.connect(comp);comp.connect(this.ctx.destination);
+    this.musicBus=this.ctx.createGain();this.musicBus.connect(this.master);
+    this.prepareIntro();this.timer=setInterval(()=>this.tick(),25);
+   }
+   // Both requests happen inside the initiating tap/click, before any await (iPhone).
+   const resumed=this.ctx.state==='suspended'?this.ctx.resume():Promise.resolve();
+   this.playIntro();await resumed;
+   return this.ctx.state==='running';
+  }catch(e){this.failed=true;return false;}
+ }
+ prepareIntro(){
+  try{
+   this.intro=new Audio('./assets/music/spooky-scary-skeletons.mp3');
+   this.intro.preload='auto';this.intro.loop=false;
+   this.introGain=this.ctx.createGain();this.introGain.gain.value=.65;
+   this.introSource=this.ctx.createMediaElementSource(this.intro);
+   this.introSource.connect(this.introGain);this.introGain.connect(this.master);
+   this.intro.addEventListener('ended',()=>this.finishIntro());
+   this.intro.addEventListener('error',()=>this.finishIntro());
+   this.intro.addEventListener('playing',()=>{
+    clearTimeout(this.introWatchdog);
+    if(!this.playing||!this.music||this.introDone)this.intro.pause();
+   });
+   this.intro.addEventListener('waiting',()=>this.watchIntro());
+   this.intro.addEventListener('stalled',()=>this.watchIntro());
+  }catch(e){this.finishIntro();}
+ }
+ watchIntro(){
+  if(this.introDone||!this.playing||!this.music)return;
+  clearTimeout(this.introWatchdog);
+  this.introWatchdog=setTimeout(()=>this.finishIntro(),12000);
+ }
+ playIntro(){
+  if(!this.intro||this.introDone||!this.playing||!this.music||this.introPending||!this.intro.paused)return;
+  const attempt=++this.introAttempt;this.introPending=true;this.watchIntro();
+  try{Promise.resolve(this.intro.play()).then(()=>{
+   if(attempt!==this.introAttempt)return;
+   this.introPending=false;
+   if(!this.playing||!this.music||this.introDone)this.intro.pause();
+  }).catch(error=>{
+   if(attempt!==this.introAttempt)return;
+   this.introPending=false;
+   if(error.name!=='AbortError')this.finishIntro();
+  });}catch(e){this.introPending=false;this.finishIntro();}
+ }
+ pauseIntro(){
+  this.introAttempt++;this.introPending=false;clearTimeout(this.introWatchdog);
+  if(this.intro)this.intro.pause();
+ }
+ finishIntro(){
+  if(this.introDone)return;
+  this.introDone=true;this.pauseIntro();this.step=0;
+  if(this.ctx){
+   const now=this.ctx.currentTime;this.next=now+.03;
+   this.musicBus.gain.cancelScheduledValues(now);
+   this.musicBus.gain.setValueAtTime(0,now);
+   this.musicBus.gain.linearRampToValueAtTime(1,now+1.5);
+  }
+ }
  track(o,g,music,extra=[]){const n={o,g,music};this.notes.push(n);o.onended=()=>{o.disconnect();g.disconnect();extra.forEach(x=>x.disconnect());const i=this.notes.indexOf(n);if(i>=0)this.notes.splice(i,1);};}
- tone(freq,duration,type='sine',volume=.12,when=null,end=null,music=false){if(!this.ctx||this.ctx.state!=='running')return;const now=when??this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain(),f=this.ctx.createBiquadFilter();o.type=type;o.frequency.setValueAtTime(freq,now);if(end)o.frequency.exponentialRampToValueAtTime(end,now+duration);f.type='lowpass';f.frequency.value=music?900:2600;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(volume,now+.006);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(f);f.connect(g);g.connect(this.master);o.start(now);o.stop(now+duration+.02);this.track(o,g,music,[f]);}
- noise(duration=.1,volume=.08,when=null,cutoff=650,music=false){if(!this.ctx||this.ctx.state!=='running')return;const now=when??this.ctx.currentTime,b=this.ctx.createBuffer(1,Math.ceil(this.ctx.sampleRate*duration),this.ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);const o=this.ctx.createBufferSource(),f=this.ctx.createBiquadFilter(),g=this.ctx.createGain();o.buffer=b;f.type=cutoff>2000?'highpass':'lowpass';f.frequency.value=cutoff;g.gain.setValueAtTime(volume,now);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(f);f.connect(g);g.connect(this.master);o.start(now);o.stop(now+duration+.02);this.track(o,g,music,[f]);}
+ tone(freq,duration,type='sine',volume=.12,when=null,end=null,music=false){if(!this.ctx||this.ctx.state!=='running')return;const now=when??this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain(),f=this.ctx.createBiquadFilter();o.type=type;o.frequency.setValueAtTime(freq,now);if(end)o.frequency.exponentialRampToValueAtTime(end,now+duration);f.type='lowpass';f.frequency.value=music?900:2600;g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(volume,now+.006);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(f);f.connect(g);g.connect(music?this.musicBus:this.master);o.start(now);o.stop(now+duration+.02);this.track(o,g,music,[f]);}
+ noise(duration=.1,volume=.08,when=null,cutoff=650,music=false){if(!this.ctx||this.ctx.state!=='running')return;const now=when??this.ctx.currentTime,b=this.ctx.createBuffer(1,Math.ceil(this.ctx.sampleRate*duration),this.ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);const o=this.ctx.createBufferSource(),f=this.ctx.createBiquadFilter(),g=this.ctx.createGain();o.buffer=b;f.type=cutoff>2000?'highpass':'lowpass';f.frequency.value=cutoff;g.gain.setValueAtTime(volume,now);g.gain.exponentialRampToValueAtTime(.0001,now+duration);o.connect(f);f.connect(g);g.connect(music?this.musicBus:this.master);o.start(now);o.stop(now+duration+.02);this.track(o,g,music,[f]);}
  effect(name,event={}){if(!this.sfx)return;switch(name){case'closecall':this.noise(.12,.045,null,3400);this.tone(880,.13,'sine',.045,null,1320);break;case'drop':this.noise(.12,.12,null,1800);this.tone(480,.35,'sine',.07,null,90);break;case'fall':this.noise(.35,.035,null,900);break;case'launch':this.noise(.6,.06,null,1200);this.tone(130,.65,'sine',.09,null,430);break;case'flap':this.noise(.09,.07,null,1100);this.tone(210,.12,'sine',.07,null,300);break;case'approach':case'return':this.tone(420,.18,'triangle',.08,null,280);break;case'jump':this.tone(170,.10,'triangle',.19,null,360);this.tone(740,.045,'sine',.035,null,420);this.noise(.045,.06);break;
  case'land':{const strength=.6+(event.strength||0)*.4;this.tone(90,.085,'sine',.18*strength,null,40);
  if(event.material==='metal'){this.tone(390,.12,'sine',.06*strength,null,310);this.tone(815,.075,'sine',.025*strength);this.noise(.035,.055, null,3200);}
  else if(event.material==='wood'){this.tone(170,.065,'triangle',.09*strength,null,105);this.noise(.07,.075*strength,null,1100);}
  else this.noise(.09,.075*strength,null,500);break;}case'score':this.tone(640,.065,'sine',.10);break;case'collision':this.tone(150,.25,'sawtooth',.12,null,35);this.tone(610,.22,'sine',.055,null,190);this.noise(.19,.16);break;case'pace':this.tone(280,.10,'triangle',.07,null,420);break;case'menu':this.tone(300,.045,'triangle',.1);break;}}
- setPlaying(v){if(v===this.playing)return;this.playing=v;if(v){this.next=this.ctx?this.ctx.currentTime+.06:0;this.step=0;}else this.stopMusic();}
- stopMusic(){if(!this.ctx)return;for(const n of this.notes.filter(n=>n.music)){try{n.g.gain.cancelScheduledValues(this.ctx.currentTime);n.g.gain.setTargetAtTime(.0001,this.ctx.currentTime,.012);n.o.stop(this.ctx.currentTime+.05);}catch(e){}}}
- setMusic(v){this.music=v;if(!v)this.stopMusic();else this.next=this.ctx?this.ctx.currentTime+.05:0;}
- tick(){if(!this.playing||!this.music||!this.ctx||this.ctx.state!=='running')return;const hz=n=>440*2**((n-69)/12);if(this.next<this.ctx.currentTime-.2)this.next=this.ctx.currentTime+.03;
+ setPlaying(v){if(v===this.playing)return;this.playing=v;if(v){this.next=this.ctx?this.ctx.currentTime+.06:0;this.step=0;this.playIntro();}else this.stopMusic();}
+ stopMusic(){this.pauseIntro();if(!this.ctx)return;for(const n of this.notes.filter(n=>n.music)){try{n.g.gain.cancelScheduledValues(this.ctx.currentTime);n.g.gain.setTargetAtTime(.0001,this.ctx.currentTime,.012);n.o.stop(this.ctx.currentTime+.05);}catch(e){}}}
+ setMusic(v){this.music=v;if(!v)this.stopMusic();else{this.next=this.ctx?this.ctx.currentTime+.05:0;this.playIntro();}}
+ tick(){if(!this.playing||!this.music||!this.ctx||this.ctx.state!=='running')return;
+ if(!this.introDone){
+  if(this.intro&&Number.isFinite(this.intro.duration)){
+   const remaining=this.intro.duration-this.intro.currentTime;
+   this.introGain.gain.setTargetAtTime(.65*Math.min(1,Math.max(0,remaining/1.5)),this.ctx.currentTime,.06);
+  }
+  return;
+ }
+ const hz=n=>440*2**((n-69)/12);if(this.next<this.ctx.currentTime-.2)this.next=this.ctx.currentTime+.03;
  while(this.next<this.ctx.currentTime+.12){const i=this.step%64,j=i%16,t=this.next,root=[33,33,29,31][Math.floor(i/16)];
   if(this.halloween){
    // D minor → Bb → G minor → A. Bells, low organ, muted heartbeat; no borrowed melody.

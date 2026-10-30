@@ -3,6 +3,8 @@
  'use strict';
  const API='https://not-right-meow-scores.rareboot37.chatgpt.site/api/leaderboard';
  const KEY='not-right-meow.leaderboard.v1', VERSION='skyline-flight-v4';
+ // Enable only after the separate score API accepts and records the best-run character.
+ const RECORD_CHARACTER=window.NRM_ENABLE_CHARACTER_METADATA===true;
  class Leaderboard {
   constructor(pause,callbacks={}){
    this.welcome=document.getElementById('welcome-dialog');
@@ -262,7 +264,7 @@
    if(!this.hasName()||!this.profile.token){this.status.textContent='Enter your leaderboard name before playing.';return;}
    if(new URLSearchParams(location.search).has('qa')){this.status.textContent='Practice / QA runs are not submitted.';return;}
    this.status.textContent='Connecting this run to the leaderboard…';
-   job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION,...(job.character?{character:job.character}:{})},job.token).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';if(this.profile.pendingNickname&&this.profile.token===job.token)this.refresh();}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});
+   job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION,...(RECORD_CHARACTER&&job.character?{character:job.character}:{})},job.token).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';if(this.profile.pendingNickname&&this.profile.token===job.token)this.refresh();}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});
   }
   async finishRun(score,elapsed){
    const job=this.current;if(!job?.ready)return;
@@ -277,7 +279,7 @@
    const retry=document.getElementById('score-retry');retry.hidden=true;
    this.status.textContent='Posting score…';
    try{
-    const data=await this.request('POST',{action:'finish',runId:job.runId,score:job.score,elapsed:job.elapsed,...(job.character?{character:job.character}:{})},job.token);
+    const data=await this.request('POST',{action:'finish',runId:job.runId,score:job.score,elapsed:job.elapsed,...(RECORD_CHARACTER&&job.character?{character:job.character}:{})},job.token);
     if(this.current===job){this.render(data);this.status.textContent=`Posted ${job.score} · Your best ${data.me.best} · World rank #${data.me.rank}`;this.pending=null;}
    }catch(e){if(this.current===job){this.status.textContent=e.message+' Your local best is safe.';retry.hidden=false;}}
    finally{job.busy=false;}

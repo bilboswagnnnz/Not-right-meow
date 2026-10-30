@@ -39,6 +39,18 @@
       </div>
       <div id="pause-screen" class="screen modal-screen" hidden><div class="paper-card"><span class="eyebrow">RUN PAUSED</span><h2>Paused.</h2><p>Ready when you are.</p><button id="resume" class="primary">RESUME <span>→</span></button><div class="key-hint"><kbd>SPACE</kbd> or <kbd>P</kbd> to resume</div></div></div>
       <div id="over-screen" class="screen modal-screen" hidden><div class="paper-card"><span id="over-eyebrow" class="eyebrow">RUN ENDED</span><h2>Run over.</h2><p id="quip">The street is a long way down.</p><div class="results"><div><span class="label">YOUR SCORE</span><strong id="final-score">0</strong></div><div><span class="label">PERSONAL BEST</span><strong id="final-best">0</strong></div></div><p id="online-status" class="online-status" role="status"></p><div class="board-actions"><button id="leaderboard-over" class="text-button">LEADERBOARD ↗</button><button id="score-retry" class="text-button" hidden>RETRY POST</button></div><button id="restart" class="primary">ONE MORE TRY <span>↻</span></button><div class="key-hint">press <kbd>SPACE</kbd> to try again</div></div></div>
+      <dialog id="welcome-dialog" aria-labelledby="welcome-title">
+        <span class="eyebrow">WELCOME TO THE SKYLINE</span>
+        <h2 id="welcome-title">Leaderboard Name</h2>
+        <form id="welcome-profile">
+          <label for="welcome-name" class="sr-only">Leaderboard Name</label>
+          <div class="nickname-row"><input id="welcome-name" maxlength="18" minlength="3" required autocomplete="off" placeholder="Type your name" aria-describedby="welcome-note welcome-error"></div>
+          <label class="sharing-choice"><input id="welcome-share" type="checkbox"> Share my scores on the public leaderboard</label>
+          <p id="welcome-note">3–18 letters, numbers, spaces, _ or -. Use a nickname, not your full name. Sharing is optional.</p>
+          <p id="welcome-error" role="status"></p>
+          <button class="primary" type="submit">SAVE &amp; PLAY <span aria-hidden="true">→</span></button>
+        </form>
+      </dialog>
       <dialog id="leaderboard-dialog" aria-labelledby="leaderboard-title">
         <div class="board-heading"><div><span class="eyebrow">ONE BUCKET. A WORLD OF RIVALS.</span><h2 id="leaderboard-title">The leaderboard.</h2></div><button id="leaderboard-close" class="tool" aria-label="Close leaderboard">✕</button></div>
         <div class="board-summary"><strong id="leaderboard-me">Your first posted score earns your place.</strong><button id="leaderboard-refresh" class="text-button">REFRESH ↻</button></div>

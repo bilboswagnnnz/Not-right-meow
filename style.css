@@ -38,3 +38,15 @@ body{background:#10151d;background-image:radial-gradient(ellipse at 70% 20%,#263
 @media(max-width:600px){#leaderboard-dialog{padding:18px}.board-heading h2{font-size:25px}.board-summary{font-size:10px}.board-scroll{max-height:25dvh}.board-scroll td{padding:10px 8px;font-size:12px}}
 @media(max-height:540px){#leaderboard-dialog{padding:14px;max-height:96dvh}.board-heading h2{font-size:23px;margin:4px 0 9px}.board-scroll{max-height:24dvh}#leaderboard-profile{margin-top:10px}#nickname-note{margin:6px 0}.online-status{font-size:10px!important}}
 .nickname-row .primary{min-width:80px;flex:0 0 auto}
+
+/* First-visit name entry keeps the main screen visible behind it. */
+#welcome-dialog{width:min(460px,calc(100vw - 28px));max-height:90dvh;margin:auto;padding:30px;border:1px solid #806a8e;border-radius:14px;background:#171b27;color:#f5eee3;box-shadow:0 24px 100px #000a;overflow:auto}
+#welcome-dialog::backdrop{background:#080a1299;backdrop-filter:blur(3px)}
+#welcome-dialog h2{font-size:30px;letter-spacing:-1px;margin:14px 0}
+#welcome-dialog p{font-size:14px;line-height:1.5;color:#b5bdce}
+#welcome-profile>label{font-size:11px;letter-spacing:1px}
+#welcome-dialog #welcome-note{font-size:11px;margin-top:14px}
+#welcome-error{color:#ffc481!important;min-height:1em}
+#welcome-dialog .primary{width:100%;min-width:0}
+#welcome-dialog :focus-visible{outline:2px solid #ffc481;outline-offset:3px}
+@media(max-height:540px){#welcome-dialog{padding:18px}#welcome-dialog h2{font-size:24px;margin:8px 0}#welcome-dialog p{margin:8px 0}#welcome-error{min-height:0}}

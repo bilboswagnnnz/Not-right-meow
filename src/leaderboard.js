@@ -5,12 +5,14 @@
  const KEY='not-right-meow.leaderboard.v1', VERSION='skyline-flight-v4';
  class Leaderboard {
   constructor(pause){
+   this.welcome=document.getElementById('welcome-dialog');
    this.pause=pause;this.profile={};this.current=null;this.pending=null;this.loading=false;
    this.dialog=document.getElementById('leaderboard-dialog');
    this.message=document.getElementById('leaderboard-message');
    this.status=document.getElementById('online-status');
    try{this.profile=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{}
    if(!/^[a-f0-9]{64}$/.test(this.profile.token||''))this.profile={};
+   document.getElementById('welcome-profile').onsubmit=e=>{e.preventDefault();this.saveWelcome();};
    document.getElementById('nickname').value=this.profile.nickname||'';
    document.getElementById('share-scores').checked=!!this.profile.enabled;
    document.getElementById('leaderboard-open').onclick=()=>this.open();
@@ -21,6 +23,24 @@
    document.getElementById('score-retry').onclick=()=>this.submit(this.pending);
    this.dialog.addEventListener('close',()=>this.returnFocus?.focus({preventScroll:true}));
    this.dialog.addEventListener('click',e=>{if(e.target===this.dialog){const r=this.dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)this.dialog.close();}});
+  }
+  hasName(){return /^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(this.profile.nickname||'');}
+  askName(onReady){
+   if(this.hasName())return false;
+   this.onReady=onReady;
+   if(!this.welcome.open)this.welcome.showModal();
+   document.getElementById('welcome-name').focus();
+   return true;
+  }
+  saveWelcome(){
+   const nickname=document.getElementById('welcome-name').value.trim().replace(/ +/g,' ');
+   if(!/^[A-Za-z0-9][A-Za-z0-9 _-]{2,17}$/.test(nickname)){document.getElementById('welcome-error').textContent='Use 3–18 letters, numbers, spaces, _ or -.';return;}
+   document.getElementById('nickname').value=nickname;
+   document.getElementById('share-scores').checked=document.getElementById('welcome-share').checked;
+   this.saveProfile();
+   if(!this.hasName()){document.getElementById('welcome-error').textContent=this.message.textContent;return;}
+   this.welcome.close();
+   const ready=this.onReady;this.onReady=null;ready?.();
   }
   async request(method='GET',body){
    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);

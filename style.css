@@ -86,3 +86,14 @@ body{background:#10151d;background-image:radial-gradient(ellipse at 70% 20%,#263
 #title-screen .title-copy{top:31%}
 #title-screen h1{margin:0 0 clamp(18px,3cqw,40px)}
 #title-screen .intro-controls{font-size:clamp(7px,.85cqw,12px);letter-spacing:1px}
+
+#recovery-dialog{width:min(520px,calc(100vw - 28px));max-height:90dvh;margin:auto;padding:26px;border:1px solid #806a8e;border-radius:16px;background:#171b27;color:#f5eee3;overflow:auto}
+#recovery-dialog::backdrop{background:#080a12cc}
+#recovery-dialog p{font-size:13px;line-height:1.5;color:#bac2d1}
+#recovery-dialog label{display:block;margin:12px 0 8px;font-size:11px;color:#d7b787}
+#recovery-dialog textarea{width:100%;box-sizing:border-box;background:#0e121d;color:white;border:1px solid #4e566a;border-radius:8px;padding:12px;font:13px monospace;overflow-wrap:anywhere}
+#recovery-dialog .primary{width:100%;margin-top:10px}
+#recovery-import{margin-top:20px;border-top:1px solid #35394b;padding-top:12px}
+#recovery-status{color:#ffc481}
+#recovery-dialog .recovery-warning{font-size:11px;color:#abb4c8}
+#welcome-import,#leaderboard-recovery{display:block;width:100%;white-space:normal;text-align:center}

@@ -14,7 +14,7 @@
   <script defer src="./src/core.js?v=close-call-1"></script>
   <script defer src="./src/audio.js?v=close-call-1"></script>
   <script defer src="./src/renderer.js?v=close-call-1"></script>
-  <script defer src="./src/leaderboard.js?v=names-only-1"></script>
+  <script defer src="./src/leaderboard.js?v=recovery-1"></script>
   <script defer src="./src/game.js?v=close-call-1"></script>
 </head>
 <body>
@@ -59,13 +59,31 @@
           <p id="welcome-error" role="status"></p>
           <button class="primary" type="submit">SAVE &amp; PLAY <span aria-hidden="true">→</span></button>
         </form>
+        <button id="welcome-import" class="text-button" type="button">ALREADY PLAY HERE? LINK WITH RECOVERY CODE</button>
       </dialog>
       <dialog id="leaderboard-dialog" aria-labelledby="leaderboard-title">
         <div class="board-heading"><div><h2 id="leaderboard-title">World Champion</h2></div><button id="leaderboard-close" class="tool" aria-label="Close leaderboard">✕</button></div>
         <div class="board-summary"><strong id="leaderboard-me">Your first posted score earns your place.</strong><button id="leaderboard-refresh" class="text-button">REFRESH ↻</button></div>
         <p id="leaderboard-message" role="status" aria-live="polite">Loading scores…</p>
         <div class="board-scroll"><table><thead><tr><th scope="col">RANK</th><th scope="col">PLAYER</th><th scope="col">BEST</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
-        <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><p id="nickname-note">Your name and best score are posted automatically to the public leaderboard. Use 3–18 letters, numbers, spaces, _ or -. No account needed. Your identity stays in this browser; clearing site data creates a new player. Earlier local scores cannot be imported.</p></form>
+        <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><p id="nickname-note">Your name and best score are posted automatically to the public leaderboard. Use 3–18 letters, numbers, spaces, _ or -. Your nickname and best score can follow you between devices using your private recovery code. Keep the code secret.</p></form>
+        <button id="leaderboard-recovery" class="text-button" type="button">LINK DEVICES / RECOVERY CODE</button>
+      </dialog>
+      <dialog id="recovery-dialog" aria-labelledby="recovery-title">
+        <div class="board-heading"><h2 id="recovery-title">Link your devices.</h2><button id="recovery-close" class="tool" type="button" aria-label="Close recovery code">✕</button></div>
+        <div id="recovery-export">
+          <p>Copy this code on your current device, then paste it on your other device. Both devices will use the same leaderboard entry and best score.</p>
+          <label for="recovery-code">YOUR PRIVATE RECOVERY CODE</label>
+          <textarea id="recovery-code" rows="3" readonly spellcheck="false" autocomplete="off" aria-label="Your private recovery code"></textarea>
+          <button id="recovery-copy" class="primary" type="button">COPY MY CODE</button>
+        </div>
+        <form id="recovery-import">
+          <label for="recovery-entry">HAVE A CODE FROM ANOTHER DEVICE?</label>
+          <textarea id="recovery-entry" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste your recovery code here" required></textarea>
+          <button class="primary" type="submit">LINK THIS DEVICE</button>
+        </form>
+        <p id="recovery-status" role="status" aria-live="polite"></p>
+        <p class="recovery-warning">Anyone with your code can use your player identity and submit scores. Keep it private. Linking replaces this device's current leaderboard identity; it does not merge old accounts.</p>
       </dialog>
       <div id="fall-controls" hidden aria-label="Freefall steering"><button id="slide-left" aria-label="Hold to slide left"><span aria-hidden="true">←</span><small>HOLD LEFT</small></button><button id="slide-right" aria-label="Hold to slide right"><span aria-hidden="true">→</span><small>HOLD RIGHT</small></button></div>
       <div id="run-tip" class="run-tip" hidden><kbd>SPACE</kbd> jump near the edge · Land before jumping again.</div>

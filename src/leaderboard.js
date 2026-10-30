@@ -81,7 +81,7 @@
    for(const row of data.entries){
     const champion=row.rank===1,tr=document.createElement('tr');if(data.me?.rank===row.rank)tr.classList.add('is-you');if(champion)tr.classList.add('world-champion');
     const rank=document.createElement('td');rank.textContent=String(row.rank).padStart(2,'0');if(champion)rank.append(' ',badge());
-    const player=document.createElement('td');player.textContent=row.nickname+' · '+row.tag+(data.me?.rank===row.rank?' (you)':'');
+    const player=document.createElement('td');player.textContent=row.nickname+(data.me?.rank===row.rank?' (you)':'');
     if(champion){const title=document.createElement('small');title.className='champion-title';title.textContent='WORLD CHAMPION';player.append(title);}
     const score=document.createElement('td');score.textContent=String(row.score);tr.append(rank,player,score);body.append(tr);
     if(row.rank<=3){const line=document.createElement('span');line.className='podium-row';const number=document.createElement('span');number.textContent=String(row.rank);if(champion)number.append(badge());const name=document.createElement('span');name.className='podium-name';name.textContent=row.nickname;const best=document.createElement('strong');best.textContent=row.score;line.append(number,name,best);podium.append(line);}

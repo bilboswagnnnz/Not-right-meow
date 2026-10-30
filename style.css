@@ -113,3 +113,7 @@ body{background:#10151d;background-image:radial-gradient(ellipse at 70% 20%,#263
 #pair-pc-dialog :focus-visible,#pair-phone-dialog :focus-visible{outline:2px solid #ffc481;outline-offset:3px}
 #welcome-qr,#leaderboard-qr{display:block;width:100%;white-space:normal;text-align:center}
 @media(max-height:540px){#pair-pc-dialog,#pair-phone-dialog{padding:12px;max-height:96dvh}#pair-qr{width:min(145px,100%)}#pair-pc-dialog h2,#pair-phone-dialog h2{font-size:21px}}
+
+#recovery-qr{display:block;width:min(240px,100%);height:auto;aspect-ratio:1;box-sizing:border-box;margin:12px auto;background:white;padding:8px;border-radius:8px}
+#recovery-qr[hidden],#recovery-qr-note[hidden]{display:none}
+#recovery-show-qr{width:100%;text-align:center;white-space:normal}

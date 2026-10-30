@@ -1,10 +1,8 @@
-/* Original jointed Classic Jim artwork. Wings, handle and balloon are decorative.
+/* Original jointed Classic Jim artwork. Handle and balloon are decorative.
    The shared game model exclusively owns collisions and movement. */
 (function(){
 'use strict';
 const A=PaperArt,ink='#162430',aqua='#78d6e3',blue='#3d91c6';
-const wing=new Path2D('M-31-95 C-43-120-70-123-79-102 Q-84-91-73-93 Q-71-82-63-88 Q-56-79-49-88Z');
-const glitter=Array.from({length:100},(_,i)=>({x:-82+((i*37)%53),y:-120+((i*19)%40),r:i%5===0?.85:.42}));
 A.jim=function(c,{time=0,state='idle',vy=0,land=0,impact=0,death=0,balloon=0,scale=1,x=0,y=0}={}){
  c.save();c.translate(x,y);c.scale(scale,scale);c.lineJoin='round';c.lineCap='round';
  const air=state==='jumping',crash=state==='collision',moving=state==='running';
@@ -17,10 +15,6 @@ A.jim=function(c,{time=0,state='idle',vy=0,land=0,impact=0,death=0,balloon=0,sca
  A.path(c,'M60-75 77-68 73-58 56-65Z','#303643',ink,3);A.line(c,'M62-69 70-66','#9ca5ad',2);
  A.ellipse(c,0,-65,52,10,'#771d2a',ink,2.5);
  c.save();c.translate(0,Math.sin(time*(moving?11:2.7))*(moving?1.4:.65));
- // One visible soft glitter wing, rooted on the back of his left silhouette.
- c.save();c.translate(-32,-96);c.rotate(Math.sin(time*(air||balloon?12:3))*(air||balloon?.15:.035));c.translate(32,96);
- c.fillStyle='#b9b5cb';c.strokeStyle=ink;c.lineWidth=2.5;c.fill(wing);c.stroke(wing);
- c.save();c.clip(wing);for(const p of glitter){c.globalAlpha=.4+.45*Math.sin(time*2+p.x)**2;A.ellipse(c,p.x,p.y,p.r,p.r,'#fff9ff');}c.globalAlpha=1;for(const [sx,sy] of[[-66,-104],[-54,-98],[-70,-95]])A.star(c,sx,sy,1.6+.45*Math.sin(time*3+sx),'#fff');c.restore();A.line(c,'M-74-104Q-63-118-43-101','#e2deeb',1);c.restore();
  A.path(c,'M-32-90Q-47-73-39-41Q0-31 39-42Q45-72 30-91Z',aqua,ink,2.7);
  // Ears and horns behind the head.
  const twitch=Math.max(0,Math.sin(time*1.4)-.97)*2;

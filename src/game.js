@@ -19,7 +19,7 @@
     renderer.character=character;canvas.setAttribute('aria-label',(character==='jim'?'Jim in a red wagon':'Cookie in a bucket')+' runner. Space or click to jump; after 50 points, tap to fly. P to pause.');$('character-name').textContent=character.toUpperCase();
     $('character-confirm').textContent='PLAY AS '+character.toUpperCase()+' →';
     document.querySelectorAll('[data-character]').forEach(b=>{const active=b.dataset.character===character;b.setAttribute('aria-pressed',String(active));b.querySelector('.selection-mark').textContent=active?'SELECTED':'SELECT';});
-    document.querySelector('.title-copy p').innerHTML=character==='jim'?'Jim. One wagon.<br>A little glitter. Absolutely no brakes.':window.Halloween?.active?'Cookie. One bucket. A haunted skyline.<br>Keep moving. They’re right behind you.':'Cookie. One bucket.<br>A city to cross. A long way down.';
+    document.querySelector('.title-copy p').innerHTML=character==='jim'?'Jim. One wagon.<br>A city to cross. Absolutely no brakes.':window.Halloween?.active?'Cookie. One bucket. A haunted skyline.<br>Keep moving. They’re right behind you.':'Cookie. One bucket.<br>A city to cross. A long way down.';
   }
   function openCharacters(callback=null){pendingCharacterStart=callback;updateCharacter();$('character-dialog').showModal();}
   function closeCharacters(){pendingCharacterStart=null;character=committedCharacter;updateCharacter();$('character-dialog').close();}

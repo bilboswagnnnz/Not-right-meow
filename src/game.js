@@ -3,7 +3,7 @@
   const $=id=>document.getElementById(id),canvas=$('game'),stage=$('stage');
   const game=new NRM.Game(new URLSearchParams(location.search).has('qa')?NRM.rng(17):Math.random),renderer=new Renderer(canvas),audio=new AudioEngine();
   let character='cookie',characterChosen=false,pendingCharacterStart=null;
-  try{const stored=localStorage.getItem('not-right-meow.character.v1');if(['cookie','jim'].includes(stored)){character=stored;characterChosen=true;}}catch(e){}
+  try{const stored=localStorage.getItem('not-right-meow.character.v1');if(['cookie','jim','bigfoot'].includes(stored)){character=stored;characterChosen=true;}}catch(e){}
   let committedCharacter=character;
   renderer.character=character;
   const STORE='not-right-meow.skyline-flight.v4';let saved={},storageOK=true;
@@ -28,10 +28,11 @@
   function save(){try{localStorage.setItem(STORE,JSON.stringify({best:game.best,sfx:audio.sfx,music:audio.music}));}catch(e){if(storageOK)toast('Best score is kept for this session only.');storageOK=false;}}
   function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');toastUntil=performance.now()+2800;}
   async function unlock(){audio.setPlaying(game.phase==='playing');if(!await audio.unlock())toast('Audio unavailable. The game is still ready to play.');audio.setPlaying(game.phase==='playing');}
-  function start(jump=false){clearSteering();if(leaderboard.askName(()=>start(jump)))return;if(!characterChosen){openCharacters(()=>start(jump));return;}game.start();leaderboard.beginRun(character);renderer.particles=[];renderer.rings=[];renderer.closeCallLife=0;renderer.camera=game.surfaceY-100;accumulator=0;unlock();audio.effect('menu');if(jump)game.jump();syncUI();canvas.focus({preventScroll:true});}
+  function start(jump=false){if(character==='bigfoot'&&PaperArt.bigfootStatus!=='ready'){toast('Bigfoot is getting comfortable. Try again in a moment.');return;}clearSteering();if(leaderboard.askName(()=>start(jump)))return;if(!characterChosen){openCharacters(()=>start(jump));return;}game.start();leaderboard.beginRun(character);renderer.particles=[];renderer.rings=[];renderer.closeCallLife=0;renderer.camera=game.surfaceY-100;accumulator=0;unlock();audio.effect('menu');if(jump)game.jump();syncUI();canvas.focus({preventScroll:true});}
   function updateCharacter(){
-    renderer.character=character;canvas.setAttribute('aria-label',(character==='jim'?'Jim in a red wagon':'Cookie in a bucket')+' runner. Space or click to jump; after 50 points, tap to fly; after 100, hold left/right or A/D to slide. P to pause.');$('character-name').textContent=character.toUpperCase();
+    renderer.character=character;canvas.setAttribute('aria-label',(character==='bigfoot'?'Bigfoot in a wheeled recliner':character==='jim'?'Jim in a red wagon':'Cookie in a bucket')+' runner. Space or click to jump; after 50 points, tap to fly; after 100, hold left/right or A/D to slide. P to pause.');$('character-name').textContent=character.toUpperCase();
     $('character-confirm').textContent='PLAY AS '+character.toUpperCase()+' →';
+    $('character-confirm').disabled=character==='bigfoot'&&PaperArt.bigfootStatus!=='ready';
     document.querySelectorAll('[data-character]').forEach(b=>{const active=b.dataset.character===character;b.setAttribute('aria-pressed',String(active));b.querySelector('.selection-mark').textContent=active?'SELECTED':'SELECT';});
   }
   function openCharacters(callback=null){pendingCharacterStart=callback;updateCharacter();$('character-dialog').showModal();}
@@ -40,7 +41,18 @@
   $('character-dialog').addEventListener('cancel',()=>{pendingCharacterStart=null;character=committedCharacter;updateCharacter();});
   document.querySelectorAll('[data-character]').forEach(b=>b.onclick=()=>{character=b.dataset.character;updateCharacter();});
   $('character-confirm').onclick=()=>{characterChosen=true;committedCharacter=character;try{localStorage.setItem('not-right-meow.character.v1',character);}catch(e){}const callback=pendingCharacterStart;pendingCharacterStart=null;$('character-dialog').close();updateCharacter();if(callback)callback();};
-  function drawCharacters(now){if(!$('character-dialog').open)return;for(const id of ['cookie','jim']){const cv=$(id+'-preview'),c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);PaperArt.ellipse(c,180,263,76,9,'#070d1a66');(id==='jim'?PaperArt.jim:PaperArt.cat)(c,{x:180,y:252,scale:1.25,time:renderer.reduced?0:now/1000,state:'idle'});}}
+  function drawCharacters(now){if(!$('character-dialog').open)return;for(const id of ['cookie','jim','bigfoot']){const cv=$(id+'-preview'),c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);PaperArt.ellipse(c,180,263,76,9,'#070d1a66');(id==='bigfoot'?PaperArt.bigfoot:id==='jim'?PaperArt.jim:PaperArt.cat)(c,{x:180,y:252,scale:1.25,time:renderer.reduced?0:now/1000,state:'idle'});}}
+  const bigfootCard=document.querySelector('[data-character="bigfoot"]');
+  bigfootCard.disabled=PaperArt.bigfootStatus!=='ready';
+  PaperArt.bigfootReady.then(ready=>{
+    bigfootCard.disabled=!ready;
+    if(!ready){
+      bigfootCard.querySelector('.selection-mark').textContent='UNAVAILABLE';
+      if(character==='bigfoot'){character=committedCharacter='cookie';characterChosen=false;toast('Bigfoot could not load. Refresh to try again.');}
+    }
+    updateCharacter();
+    if(!ready)bigfootCard.querySelector('.selection-mark').textContent='UNAVAILABLE';
+  });
   updateCharacter();
   function action(){if(game.phase==='title'||game.phase==='gameover')start(true);else if(game.phase==='paused')pause();else if(game.phase==='playing')game.jump();}
   function pause(){clearSteering();if(game.phase==='playing'){game.pause();audio.setPlaying(false);$('resume').focus({preventScroll:true});}else if(game.phase==='paused'){game.resume();unlock();canvas.focus({preventScroll:true});}accumulator=0;syncUI();}

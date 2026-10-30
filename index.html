@@ -4,22 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10151d">
-  <meta name="description" content="Choose Cookie or Jim. One bucket or one wagon. Absolutely no brakes. A precision arcade runner: jump, fly, and freefall.">
+  <meta name="description" content="Choose Cookie, Jim, or Bigfoot. A bucket, a wagon, or a wheeled recliner. Absolutely no brakes. A precision arcade runner: jump, fly, and freefall.">
   <title>Not Right Meow — After Hours</title>
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-  <link rel="stylesheet" href="./style.css?v=character-ranks-1">
+  <link rel="stylesheet" href="./style.css?v=bigfoot-1">
   <script defer src="./assets/seasonal.js"></script>
   <script defer src="./assets/art.js"></script>
   <script defer src="./assets/jim.js?v=jim-2"></script>
+  <link rel="preload" as="image" href="./assets/bigfoot.png">
+  <script defer src="./assets/bigfoot.js?v=bigfoot-1"></script>
   <script defer src="./src/core.js?v=close-call-1"></script>
   <script defer src="./src/audio.js?v=opening-track-1"></script>
-  <script defer src="./src/renderer.js?v=close-call-1"></script>
+  <script defer src="./src/renderer.js?v=bigfoot-1"></script>
   <script>window.NRM_ENABLE_CHARACTER_METADATA=true;</script>
-  <script defer src="./src/leaderboard.js?v=character-ranks-2"></script>
+  <script defer src="./src/leaderboard.js?v=bigfoot-1"></script>
   <script defer src="./assets/qrcode.js?v=qr-1"></script>
   <script defer src="./src/pairing-config.js?v=qr-1"></script>
   <script defer src="./src/pairing.js?v=qr-1"></script>
-  <script defer src="./src/game.js?v=opening-track-1"></script>
+  <script defer src="./src/game.js?v=bigfoot-1"></script>
 </head>
 <body>
   <main id="app">
@@ -49,6 +51,7 @@
         <div class="character-grid">
           <button class="character-card" data-character="cookie" aria-pressed="true"><canvas id="cookie-preview" width="360" height="290" aria-hidden="true"></canvas><strong>COOKIE</strong><span>The original bucket rider.</span><small class="selection-mark">SELECTED</small></button>
           <button class="character-card" data-character="jim" aria-pressed="false"><canvas id="jim-preview" width="360" height="290" aria-hidden="true"></canvas><strong>JIM</strong><span>Red wagon. Absolutely no brakes.</span><small class="selection-mark">SELECT</small></button>
+          <button class="character-card" data-character="bigfoot" aria-pressed="false" disabled><canvas id="bigfoot-preview" width="360" height="290" aria-hidden="true"></canvas><strong>BIGFOOT</strong><span>Big feet. Plush seat. Rolling comfort.</span><small class="selection-mark">SELECT</small></button>
         </div>
         <p class="character-note">Same jumps. Same speed. Same chance at World Champion.</p>
         <button id="character-confirm" class="primary">PLAY AS COOKIE →</button>

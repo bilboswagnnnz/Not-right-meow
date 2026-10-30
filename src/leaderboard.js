@@ -258,6 +258,8 @@
    if(fromWelcome){const ready=this.onReady;this.onReady=null;ready?.();}
   }
   beginRun(character){
+   // Bigfoot runs use the API's legacy null metadata until the separate score
+   // service accepts bigfoot. Scores still post; never label them as Cookie/Jim.
    const selectedCharacter=['cookie','jim'].includes(character)?character:null;
    const job={ready:null,runId:null,error:null,score:0,elapsed:0,busy:false,token:this.profile.token,character:selectedCharacter};this.current=job;this.pending=null;
    document.getElementById('score-retry').hidden=true;

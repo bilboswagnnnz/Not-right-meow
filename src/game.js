@@ -9,7 +9,17 @@
   const STORE='not-right-meow.skyline-flight.v4';let saved={},storageOK=true;
   try{saved=JSON.parse(localStorage.getItem(STORE)||localStorage.getItem('not-right-meow.skyline.v3')||'{}')||{};}catch(e){storageOK=false;}
   game.best=Number.isFinite(saved.best)?Math.max(0,Math.floor(saved.best)):0;audio.sfx=saved.sfx!==false;audio.music=saved.music!==false;
-  const leaderboard=new NRMLeaderboard(()=>{if(game.phase==='playing')pause();});
+  const leaderboard=new NRMLeaderboard(
+    ()=>{if(game.phase==='playing')pause();},
+    {
+      onIdentityChanged:()=>{game.best=0;game.newBest=false;save();syncUI();},
+      onRemoteBest:best=>{
+        if(Number.isSafeInteger(best)&&best>=0&&best>game.best){
+          game.best=best;save();syncUI();
+        }
+      }
+    }
+  );
   const steerKeys=new Set(),steerPointers=new Map();
   function steering(){const left=steerKeys.has('ArrowLeft')||steerKeys.has('KeyA')||[...steerPointers.values()].includes(-1),right=steerKeys.has('ArrowRight')||steerKeys.has('KeyD')||[...steerPointers.values()].includes(1);game.steer(Number(right)-Number(left));$('slide-left').classList.toggle('held',left);$('slide-right').classList.toggle('held',right);}
   function clearSteering(){steerKeys.clear();steerPointers.clear();steering();}
@@ -50,7 +60,7 @@
   async function fullscreen(){if(fullscreenBusy)return;fullscreenBusy=true;try{if(document.fullscreenElement)await document.exitFullscreen();else if(stage.requestFullscreen)await stage.requestFullscreen();else toast('Fullscreen is unavailable in this browser.');}catch(e){toast('Fullscreen is blocked here. Open the game in its own tab.');}finally{fullscreenBusy=false;}}
   $('start').addEventListener('click',()=>start());$('restart').addEventListener('click',()=>start());$('resume').addEventListener('click',pause);$('pause').addEventListener('click',pause);$('sound').addEventListener('click',toggleSound);$('music').addEventListener('click',toggleMusic);$('fullscreen').addEventListener('click',fullscreen);
   canvas.addEventListener('pointerdown',e=>{if(e.button===0){e.preventDefault();canvas.focus({preventScroll:true});unlock();action();}});
-  document.addEventListener('keydown',e=>{if($('character-dialog').open||document.getElementById('welcome-dialog').open||document.getElementById('leaderboard-dialog').open||e.target.closest?.('input,textarea,select,[contenteditable]'))return;if(e.ctrlKey||e.metaKey||e.altKey)return;if(['ArrowLeft','ArrowRight','KeyA','KeyD'].includes(e.code)&&['drop','falling'].includes(game.mode)){e.preventDefault();if(game.phase==='playing'){steerKeys.add(e.code);steering();}return;}if(e.code==='Space'){e.preventDefault();if(e.repeat)return;action();}else if(!e.repeat&&(e.code==='KeyP'||e.code==='Escape')){e.preventDefault();pause();}else if(!e.repeat&&e.code==='KeyM'){toggleSound();}else if(!e.repeat&&e.code==='KeyF'){e.preventDefault();fullscreen();}});
+  document.addEventListener('keydown',e=>{if($('character-dialog').open||document.getElementById('welcome-dialog').open||document.getElementById('leaderboard-dialog').open||document.getElementById('recovery-dialog').open||e.target.closest?.('input,textarea,select,[contenteditable]'))return;if(e.ctrlKey||e.metaKey||e.altKey)return;if(['ArrowLeft','ArrowRight','KeyA','KeyD'].includes(e.code)&&['drop','falling'].includes(game.mode)){e.preventDefault();if(game.phase==='playing'){steerKeys.add(e.code);steering();}return;}if(e.code==='Space'){e.preventDefault();if(e.repeat)return;action();}else if(!e.repeat&&(e.code==='KeyP'||e.code==='Escape')){e.preventDefault();pause();}else if(!e.repeat&&e.code==='KeyM'){toggleSound();}else if(!e.repeat&&e.code==='KeyF'){e.preventDefault();fullscreen();}});
   document.addEventListener('keyup',e=>{if(steerKeys.delete(e.code)){e.preventDefault();steering();}});
   for(const [id,direction] of [['slide-left',-1],['slide-right',1]]){
     const b=$(id);b.addEventListener('pointerdown',e=>{if(game.phase!=='playing'||e.button!==0)return;e.preventDefault();b.setPointerCapture(e.pointerId);steerPointers.set(e.pointerId,direction);steering();unlock();});

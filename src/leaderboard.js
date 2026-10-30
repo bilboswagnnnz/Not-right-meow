@@ -14,6 +14,9 @@
    if(!/^[a-f0-9]{64}$/.test(this.profile.token||''))this.profile={};
    document.getElementById('welcome-profile').onsubmit=e=>{e.preventDefault();this.saveWelcome();};
    document.getElementById('nickname').value=this.profile.nickname||'';
+   document.getElementById('top-three').onclick=()=>this.open();
+   this.refresh();
+   setInterval(()=>{if(!document.hidden&&!document.getElementById('title-screen').hidden)this.refresh();},30000);
    document.getElementById('leaderboard-open').onclick=()=>this.open();
    document.getElementById('leaderboard-over').onclick=()=>this.open();
    document.getElementById('leaderboard-close').onclick=()=>this.dialog.close();
@@ -66,16 +69,24 @@
    const button=document.getElementById('leaderboard-refresh');button.disabled=true;
    this.message.textContent='Loading scores…';
    try{this.render(await this.request());this.message.textContent='Live scores · Top 100 · Highest score first';}
-   catch(e){this.message.textContent=e.message;}
+   catch(e){this.message.textContent=e.message;if(!this.hasScores)document.getElementById('top-three-rows').textContent='Scores unavailable · Tap to retry';}
    finally{this.loading=false;button.disabled=false;}
   }
   render(data){
    const body=document.getElementById('leaderboard-rows');body.replaceChildren();
    if(!data.entries.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=3;td.className='board-empty';td.textContent='The skyline is yours. Be the first to post a score.';tr.append(td);body.append(tr);}
+   this.hasScores=true;
+   const podium=document.getElementById('top-three-rows');podium.replaceChildren();
+   const badge=()=>{const span=document.createElement('span');span.className='champion-badge';span.textContent='C';span.setAttribute('aria-label','World Champion');return span;};
    for(const row of data.entries){
-    const tr=document.createElement('tr');if(data.me?.rank===row.rank)tr.className='is-you';
-    for(const value of [String(row.rank).padStart(2,'0'),row.nickname+' · '+row.tag+(data.me?.rank===row.rank?' (you)':''),String(row.score)]){const td=document.createElement('td');td.textContent=value;tr.append(td);}body.append(tr);
+    const champion=row.rank===1,tr=document.createElement('tr');if(data.me?.rank===row.rank)tr.classList.add('is-you');if(champion)tr.classList.add('world-champion');
+    const rank=document.createElement('td');rank.textContent=String(row.rank).padStart(2,'0');if(champion)rank.append(' ',badge());
+    const player=document.createElement('td');player.textContent=row.nickname+' · '+row.tag+(data.me?.rank===row.rank?' (you)':'');
+    if(champion){const title=document.createElement('small');title.className='champion-title';title.textContent='WORLD CHAMPION';player.append(title);}
+    const score=document.createElement('td');score.textContent=String(row.score);tr.append(rank,player,score);body.append(tr);
+    if(row.rank<=3){const line=document.createElement('span');line.className='podium-row';const number=document.createElement('span');number.textContent=String(row.rank);if(champion)number.append(badge());const name=document.createElement('span');name.className='podium-name';name.textContent=row.nickname;const best=document.createElement('strong');best.textContent=row.score;line.append(number,name,best);podium.append(line);}
    }
+   for(let i=data.entries.length+1;i<=3;i++){const line=document.createElement('span');line.className='podium-row vacant';line.textContent=i+'  ·  Place open';podium.append(line);}
    document.getElementById('leaderboard-me').textContent=data.me?`YOUR BEST ${data.me.best} · WORLD RANK #${data.me.rank}`:'Your first posted score earns your place.';
   }
   beginRun(){

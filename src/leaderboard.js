@@ -118,6 +118,35 @@
     document.getElementById('welcome-name').value=serverName;
    }catch{}
   }
+  characterPortrait(character){
+   // A badge is shown only when the score service confirms the character
+   // that achieved the player's *best*, not the last-used character.
+   const kind=character==='cookie'||character==='jim'?character:null;
+   const badge=document.createElement('span');
+   badge.className='leaderboard-character'+(kind?'':' unknown-character');
+   badge.title=kind?'Best score earned with '+(kind==='cookie'?'Cookie':'Jim'):'Character not recorded for this best score';
+   badge.setAttribute('role','img');
+   badge.setAttribute('aria-label',badge.title);
+   if(!kind){badge.textContent='?';return badge;}
+   const canvas=document.createElement('canvas');
+   canvas.width=72;canvas.height=72;
+   canvas.setAttribute('aria-hidden','true');
+   const c=canvas.getContext('2d');
+   if(c&&window.PaperArt&&typeof PaperArt[kind==='cookie'?'cat':'jim']==='function'){
+    c.fillStyle=kind==='cookie'?'#342e46':'#293e50';
+    c.beginPath();c.arc(36,36,36,0,Math.PI*2);c.fill();
+    c.save();c.beginPath();c.arc(36,36,35,0,Math.PI*2);c.clip();
+    (kind==='cookie'?PaperArt.cat:PaperArt.jim)(c,{x:36,y:68,scale:.34,state:'idle',time:0});
+    c.restore();
+   }
+   badge.append(canvas);
+   return badge;
+  }
+  bestScoreCharacter(row){
+   // The server must return the character paired with the record score.
+   // Historical rows without that information must NOT default to Cookie.
+   return row.bestCharacter??row.best_character??null;
+  }
   render(data){
    this.syncServerNickname(data);
    if(data.me&&Number.isFinite(Number(data.me.best)))this.onRemoteBest?.(Number(data.me.best));
@@ -128,11 +157,17 @@
    const badge=()=>{const span=document.createElement('span');span.className='champion-badge';span.textContent='C';span.setAttribute('aria-label','World Champion');return span;};
    for(const row of data.entries){
     const champion=row.rank===1,tr=document.createElement('tr');if(data.me?.rank===row.rank)tr.classList.add('is-you');if(champion)tr.classList.add('world-champion');
-    const rank=document.createElement('td');rank.textContent=String(row.rank).padStart(2,'0');if(champion)rank.append(' ',badge());
+    const rank=document.createElement('td');
+    const rankContents=document.createElement('span');rankContents.className='board-rank-with-character';
+    const rankNumber=document.createElement('span');rankNumber.textContent=String(row.rank).padStart(2,'0');
+    rankContents.append(rankNumber);
+    if(champion)rankContents.append(badge());
+    rankContents.append(this.characterPortrait(this.bestScoreCharacter(row)));
+    rank.append(rankContents);
     const player=document.createElement('td');player.textContent=row.nickname+(data.me?.rank===row.rank?' (you)':'');
     if(champion){const title=document.createElement('small');title.className='champion-title';title.textContent='WORLD CHAMPION';player.append(title);}
     const score=document.createElement('td');score.textContent=String(row.score);tr.append(rank,player,score);body.append(tr);
-    if(row.rank<=3){const line=document.createElement('span');line.className='podium-row';const number=document.createElement('span');number.textContent=String(row.rank);if(champion)number.append(badge());const name=document.createElement('span');name.className='podium-name';name.textContent=row.nickname;const best=document.createElement('strong');best.textContent=row.score;line.append(number,name,best);podium.append(line);}
+    if(row.rank<=3){const line=document.createElement('span');line.className='podium-row';const number=document.createElement('span');number.textContent=String(row.rank);if(champion)number.append(badge());number.append(this.characterPortrait(this.bestScoreCharacter(row)));const name=document.createElement('span');name.className='podium-name';name.textContent=row.nickname;const best=document.createElement('strong');best.textContent=row.score;line.append(number,name,best);podium.append(line);}
    }
    for(let i=data.entries.length+1;i<=3;i++){const line=document.createElement('span');line.className='podium-row vacant';line.textContent=i+'  ·  Place open';podium.append(line);}
    document.getElementById('leaderboard-me').textContent=data.me?`YOUR BEST ${data.me.best} · WORLD RANK #${data.me.rank}`:'Your first posted score earns your place.';
@@ -219,13 +254,14 @@
    const fromWelcome=this.recoveryFromWelcome;this.recoveryFromWelcome=false;this.recovery.close();
    if(fromWelcome){const ready=this.onReady;this.onReady=null;ready?.();}
   }
-  beginRun(){
-   const job={ready:null,runId:null,error:null,score:0,elapsed:0,busy:false,token:this.profile.token};this.current=job;this.pending=null;
+  beginRun(character){
+   const selectedCharacter=['cookie','jim'].includes(character)?character:null;
+   const job={ready:null,runId:null,error:null,score:0,elapsed:0,busy:false,token:this.profile.token,character:selectedCharacter};this.current=job;this.pending=null;
    document.getElementById('score-retry').hidden=true;
    if(!this.hasName()||!this.profile.token){this.status.textContent='Enter your leaderboard name before playing.';return;}
    if(new URLSearchParams(location.search).has('qa')){this.status.textContent='Practice / QA runs are not submitted.';return;}
    this.status.textContent='Connecting this run to the leaderboard…';
-   job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION},job.token).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';if(this.profile.pendingNickname&&this.profile.token===job.token)this.refresh();}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});
+   job.ready=this.request('POST',{action:'start',nickname:this.profile.nickname,version:VERSION,...(job.character?{character:job.character}:{})},job.token).then(d=>{job.runId=d.runId;if(this.current===job)this.status.textContent='Online run · Your score will post automatically.';if(this.profile.pendingNickname&&this.profile.token===job.token)this.refresh();}).catch(e=>{job.error=e.message;if(this.current===job)this.status.textContent='Local run only. '+e.message;});
   }
   async finishRun(score,elapsed){
    const job=this.current;if(!job?.ready)return;
@@ -240,7 +276,7 @@
    const retry=document.getElementById('score-retry');retry.hidden=true;
    this.status.textContent='Posting score…';
    try{
-    const data=await this.request('POST',{action:'finish',runId:job.runId,score:job.score,elapsed:job.elapsed},job.token);
+    const data=await this.request('POST',{action:'finish',runId:job.runId,score:job.score,elapsed:job.elapsed,...(job.character?{character:job.character}:{})},job.token);
     if(this.current===job){this.render(data);this.status.textContent=`Posted ${job.score} · Your best ${data.me.best} · World rank #${data.me.rank}`;this.pending=null;}
    }catch(e){if(this.current===job){this.status.textContent=e.message+' Your local best is safe.';retry.hidden=false;}}
    finally{job.busy=false;}

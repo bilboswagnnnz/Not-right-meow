@@ -44,7 +44,7 @@ function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 class Game{
  constructor(random=Math.random){this.random=random;this.best=0;this.phase='title';this.reset();this.phase='title';}
  reset(){
-  this.fallRows=[];this.fallX=640;this.fallVx=0;this.steerInput=0;this.fallDistance=0;this.fallPassed=0;this.fallSpawned=0;this.fallStart=100;this.mode='running';this.modeTime=0;this.groundEnd=50;this.flightStart=50;this.flightPassed=0;this.flightSpawned=0;this.gates=[];this.balloon=0;this.flightBase=0;this.flightBag=[];this.airPhraseBag=[];this.airSteps=[];this.lastAirPhrase=-1;this.lastFlightKind='';this.flapTime=1;this.score=0;this.elapsed=0;this.pace=0;this.landStrength=0;this.distance=0;this.speed=C.initialSpeed;this.y=180;this.surfaceY=180;this.vy=0;this.animation='running';this.animTime=0;this.landTime=0;this.deathTime=0;this.deathY=0;this.deathVy=0;this.grounded=true;this.events=[];this.newBest=false;
+  this.lastCloseCall=-Infinity;this.fallRows=[];this.fallX=640;this.fallVx=0;this.steerInput=0;this.fallDistance=0;this.fallPassed=0;this.fallSpawned=0;this.fallStart=100;this.mode='running';this.modeTime=0;this.groundEnd=50;this.flightStart=50;this.flightPassed=0;this.flightSpawned=0;this.gates=[];this.balloon=0;this.flightBase=0;this.flightBag=[];this.airPhraseBag=[];this.airSteps=[];this.lastAirPhrase=-1;this.lastFlightKind='';this.flapTime=1;this.score=0;this.elapsed=0;this.pace=0;this.landStrength=0;this.distance=0;this.speed=C.initialSpeed;this.y=180;this.surfaceY=180;this.vy=0;this.animation='running';this.animTime=0;this.landTime=0;this.deathTime=0;this.deathY=0;this.deathVy=0;this.grounded=true;this.events=[];this.newBest=false;
   this.biome=1;this.routeIndex=0;this.chapter='ROOFTOP ESCAPE';this.chapterId=0;this.chapterBag=[];this.lastChapter=0;this.nextSerial=1;this.generatedChapters=[];
   this.obstacles=[];this.platforms=[{kind:'roof',x:-500,w:1450,h:180,biome:1,chapter:0,name:this.chapter,serial:0,scored:true,variant:0}];
   this.hitKind='gap';this.hitOverhead=false;this.appendChapter(0);
@@ -87,10 +87,15 @@ class Game{
    p.takeoff=this.nextSerial-1===this.groundEnd;p.rigH=kind==='beam'?(prev.rigH||prev.h+332):h+332;this.platforms.push(p);prev=p;
   }
  }
+ closeCall(clearance){
+  // Feedback only: use the collision geometry, and celebrate once safely clear.
+  if(this.phase!=='playing'||clearance<0||clearance>10||this.elapsed-this.lastCloseCall<.65)return;
+  this.lastCloseCall=this.elapsed;this.events.push({type:'closecall'});
+ }
  land(p){
   this.landStrength=Math.min(1,Math.abs(this.vy)/1100);const material=p.kind==='crate_stack'?'wood':['roof','tower'].includes(p.kind)?'masonry':'metal';
   this.y=p.h;this.surfaceY=p.h;this.vy=0;this.grounded=true;this.animation='landing';this.animTime=0;this.landTime=.17;this.events.push({type:'land',y:this.y,material,strength:this.landStrength});
-  if(!p.scored){p.scored=true;this.score++;this.events.push({type:'score',score:this.score,y:this.y});}
+  if(!p.scored){this.closeCall(Math.min(C.playerX+18-p.x,p.x+p.w-(C.playerX-18)));p.scored=true;this.score++;this.events.push({type:'score',score:this.score,y:this.y});}
   if(this.chapterId!==p.chapter){this.chapterId=p.chapter;this.chapter=p.name;this.biome=p.biome;this.routeIndex++;this.events.push({type:'biome',biome:this.biome,name:p.name});}
   if(this.score===this.groundEnd)this.beginFlight(p);
  }
@@ -142,7 +147,9 @@ class Game{
   for(const o of this.gates){
    o.x-=travel;
    if(airSolids(o).some(s=>overlap(airBody(this),s))){this.die({kind:o.kind});return;}
-   if(!o.scored&&o.x+o.w<C.playerX-FLIGHT.halfWidth){o.scored=true;this.flightPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});}
+   const body=airBody(this);
+   if(o.x<body.x+body.w&&o.x+o.w>body.x)o.clearance=Math.min(o.clearance??Infinity,body.y-o.low,o.high-(body.y+body.h));
+   if(!o.scored&&o.x+o.w<C.playerX-FLIGHT.halfWidth){this.closeCall(o.clearance??Infinity);o.scored=true;this.flightPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});}
   }
   // Flight camera settles at base+60; character anchor is 5 px above its feet.
   // Screen bottom is therefore base-85. Allow the entire tilted character
@@ -196,8 +203,13 @@ class Game{
   this.speed=260+this.fallPassed*2.6+Math.min(3,Math.floor(this.fallStart/150))*12;this.fallDistance+=this.speed*dt;
   const body={x:this.fallX-FALL.halfWidth,y:FALL.anchorY-FALL.bodyHeight,w:FALL.halfWidth*2,h:FALL.bodyHeight-5};
   for(const row of this.fallRows){
-   if(fallRects(row,this.fallDistance).some(r=>overlap(body,r))){this.die({kind:row.kind});return;}
-   if(!row.scored&&row.depth+row.height-this.fallDistance<body.y){row.scored=true;this.fallPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});if(this.fallPassed===25)this.events.push({type:'fall',name:'DEEP SHAFT — WATCH THE SUSPENDED CARGO'});}
+   const rects=fallRects(row,this.fallDistance);
+   if(rects.some(r=>overlap(body,r))){this.die({kind:row.kind});return;}
+   for(const r of rects)if(r.y<body.y+body.h&&r.y+r.h>body.y){
+    const gap=body.x>=r.x+r.w?body.x-(r.x+r.w):r.x-(body.x+body.w);
+    row.clearance=Math.min(row.clearance??Infinity,gap);
+   }
+   if(!row.scored&&row.depth+row.height-this.fallDistance<body.y){this.closeCall(row.clearance??Infinity);row.scored=true;this.fallPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});if(this.fallPassed===25)this.events.push({type:'fall',name:'DEEP SHAFT — WATCH THE SUSPENDED CARGO'});}
   }
   this.fallRows=this.fallRows.filter(r=>r.depth+r.height-this.fallDistance>-160);
   if(this.fallPassed===50){this.mode='fall-exit';this.modeTime=0;this.exitX=this.fallX;this.steerInput=0;this.fallRows=[];this.chapter='THE ESCAPE CHUTE';this.events.push({type:'approach',name:'50 DROPS CLEARED — ROOFTOPS AHEAD'});return;}
@@ -242,3 +254,4 @@ class Game{
   }
 const API={C,FLIGHT,FALL,airSolids,airBody,flightCamera,flightVisible,fallRects,AIR_PHRASES,BIOMES,CHAPTERS,PACE,speedAt,travelAt,paceAt,Game,rng,overlap,weatherAt};root.NRM=API;if(typeof module!=='undefined')module.exports=API;
 })(typeof globalThis!=='undefined'?globalThis:this);
+

@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Freefall gameplay QA</title><style>body{margin:0;background:#10151d;color:#e8bd83;font:14px monospace}iframe{width:100%;height:82vh;border:0}#out{padding:10px;white-space:pre-wrap}button{padding:8px;background:#294655;color:white;border:1px solid #abc}</style><button id="continue">Continue test</button><button id="resize">Toggle phone landscape</button><iframe id="f" src="../?qa&fast"></iframe><div id="out">Testing…</div><script src="pilot.js"></script><script>
+const f=document.getElementById('f'),out=document.getElementById('out'),checks=[];
+const wait=ms=>new Promise(r=>setTimeout(r,ms));let pilotOn=true,releasePreview=null;
+document.getElementById('continue').onclick=()=>{if(releasePreview){releasePreview();releasePreview=null;}};
+document.getElementById('resize').onclick=()=>{f.style.display='block';f.style.width=f.style.width==='844px'?'100%':'844px';f.style.height=f.style.width==='844px'?'390px':'82vh';};
+async function until(fn){let n=0;while(!fn()){if(++n>20000)throw Error('timeout');await wait(20);}}
+const d=()=>f.contentDocument,s=()=>f.contentWindow.NotRightMeow.snapshot(),click=id=>d().getElementById(id).click(),key=(code,type='keydown')=>d().dispatchEvent(new KeyboardEvent(type,{code,bubbles:true}));
+function check(ok,label){if(!ok)throw Error(label);checks.push(label);out.textContent=checks.join('\n');}
+async function preview(label){key('KeyP');out.textContent=checks.join('\n')+'\n'+label+' — click Continue test';await new Promise(r=>releasePreview=r);key('KeyP');}
+(async()=>{try{
+await until(()=>f.contentWindow.NotRightMeow);
+if(d().getElementById('welcome-dialog').open){d().getElementById('welcome-name').value='FallQA';d().getElementById('welcome-profile').requestSubmit();await wait(100);}
+if(!d().getElementById('character-dialog').open)click('character-open');d().querySelector('[data-character="jim"]').click();click('character-confirm');
+let lastDirection=0;
+const pilot=()=>{if(!pilotOn)return;const g=s();if(NRMTest.wantsJump(g))key('Space');const dir=NRMTest.wantsSteer(g);if(dir!==lastDirection||dir!==g.steerInput){key('ArrowLeft','keyup');key('ArrowRight','keyup');if(dir)key(dir<0?'ArrowLeft':'ArrowRight');lastDirection=dir;}};
+d().addEventListener('nrm-before-step',pilot);
+await until(()=>{if(s().phase!=='playing')throw Error('Died before fall at '+s().score);return s().mode==='falling';});check(s().score===100&&s().balloon===0,'Flight transitions into fall at 100, no balloon');check(!d().getElementById('fall-controls').hidden,'Edge controls appear');
+// Pointer events run the actual DOM button handlers, including lost capture/cancel.
+pilotOn=false;key('KeyP');let before=JSON.stringify(s());await wait(120);check(before===JSON.stringify(s()),'Pause freezes freefall and clears steering');key('KeyP');
+const left=d().getElementById('slide-left'),right=d().getElementById('slide-right');
+// Synthetic pointer capture is not active; retain real setPointerCapture while treating that specific browser restriction as test setup.
+const oldCapture=left.setPointerCapture;left.setPointerCapture=()=>{};right.setPointerCapture=()=>{};
+left.dispatchEvent(new PointerEvent('pointerdown',{pointerId:41,button:0,bubbles:true}));check(s().steerInput===-1,'Left button holds left');left.dispatchEvent(new PointerEvent('pointercancel',{pointerId:41,bubbles:true}));check(s().steerInput===0,'Pointer cancel stops steering');
+right.dispatchEvent(new PointerEvent('pointerdown',{pointerId:42,button:0,bubbles:true}));check(s().steerInput===1,'Right button holds right');right.dispatchEvent(new PointerEvent('lostpointercapture',{pointerId:42,bubbles:true}));check(s().steerInput===0,'Lost capture stops steering');left.setPointerCapture=oldCapture;right.setPointerCapture=oldCapture;
+key('KeyA');check(s().steerInput===-1,'A steers left');key('KeyA','keyup');key('KeyD');check(s().steerInput===1,'D steers right');key('KeyD','keyup');check(s().steerInput===0,'Key release brakes');pilotOn=true;
+await until(()=>{if(s().phase!=='playing')throw Error('Early fall death '+s().score);return s().score>=104;});check(s().mode==='falling','Broken floors playable');await preview('EARLY SECTION');
+await until(()=>{if(s().phase!=='playing')throw Error('Deep fall death '+s().score);return s().score>=128;});check(s().chapter==='DEEP SHAFT','Deeper section at 125');await preview('DEEP SECTION');
+await until(()=>{if(s().phase!=='playing')throw Error('Return death '+s().score);return s().score>=151;});check(s().mode==='running'&&s().character==='jim','150 returns to playable rooftops with Jim');pilotOn=false;
+await until(()=>s().phase==='gameover');click('restart');check(s().score===0&&s().mode==='running'&&s().fallRows.length===0,'Restart resets freefall');key('KeyP');
+check(d().getElementById('fall-controls').hidden,'Steering hidden outside freefall');out.textContent='ALL CHECKS PASSED\n'+checks.join('\n');
+}catch(e){out.textContent='FAILED: '+e.message+'\n'+checks.join('\n');}})();
+</script>

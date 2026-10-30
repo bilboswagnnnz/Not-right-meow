@@ -1,3 +1,19 @@
+# Latest verification: freefall + low-flight recovery — October 30, 2026
+
+This section supersedes older route descriptions below. Published route is now 50 rooftops → 50 flight gaps → 50 freefall rows. Jim is wingless.
+
+- Flight exit uses the same camera transform as rendering, with a conservative whole-character extent. 80 low-viewport probes across four heights passed, including dips of 25, 50, 65 and 85 logical pixels. Half-offscreen recovery and fully-offscreen death passed. Visible lower columns still collide. Flight solid rectangles are shared by renderer and physics; the lower opaque tint was removed and lower columns highlighted.
+- `tests/freefall.cjs`: 120 seeds × 50 rows = 6,000 freefall rows cleared with control changes limited to 100 ms intervals. Four obstacle variants, both sections, variable gaps, acceleration/reversal/braking, pause, restart, solid collision, and safe side bounds passed.
+- `tests/flight.cjs`: 80 runs through 310 points, including 8,000 air gaps, repeated transitions through 100/150 and 250/300, and upper/lower/ceiling/whole-exit probes passed.
+- `tests/gameplay.cjs`: 1,929 assertions plus geometry/material/progression checks; 36,000 combined points across 40 seeds and three rooftop timing offsets. All eight chapters and ten landing-surface types exercised.
+- Balloon-only overlaps remain harmless; body collisions remain active.
+- Chrome: actual index.html traversal through rooftops, flight and both fall sections; keyboard steering, DOM pointer button handlers/cancel/lost capture, pause/resume, return to rooftops, and restart tested with the QA pilot. Runs never post public scores. Visual review of Cookie and Jim artwork, partial-offscreen flight, and tap recovery. Small landscape layout fitted to viewport height.
+- The tests use scripted inputs; they do not establish human difficulty or physical touch-device behavior. Pointer handler tests use synthetic events with capture setup stubbed; native pointer capture needs a physical-device check. Firefox, Edge, Safari, actual iPhone hardware, fullscreen and new sound effects by listening were not verified in this revision. Existing leaderboard behavior/backend was retained; no fake scores were posted.
+
+---
+
+## Historical verification (older route versions)
+
 # Verification — Halloween 2026 presentation
 
 ## Checks run for this revision

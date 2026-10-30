@@ -2,7 +2,14 @@
 (function(root){
 'use strict';
 const C=Object.freeze({width:1280,height:720,ground:580,playerX:300,gravity:2400,jumpVelocity:820,initialSpeed:470,maxSpeed:860,step:1/120});
-const FLIGHT=Object.freeze({gravity:800,lift:270,bodyHeight:118,halfWidth:29,visualHeight:140,viewportBottom:-85,ceiling:560});
+const FLIGHT=Object.freeze({gravity:800,lift:270,bodyHeight:110,halfWidth:26,bottomInset:6,visualHeight:140,viewportBottom:-85,ceiling:560});
+// Shared geometry: renderer and collision checks use these exact visible solids.
+function airSolids(o){return [{x:o.x,y:o.low-1600,w:o.w,h:1600},{x:o.x,y:o.high,w:o.w,h:1600}];}
+function airBody(g){return {x:C.playerX-FLIGHT.halfWidth,y:g.y+FLIGHT.bottomInset,w:FLIGHT.halfWidth*2,h:FLIGHT.bodyHeight-FLIGHT.bottomInset};}
+function flightCamera(g){return g.flightBase+60;}
+function flightVisible(g){return C.ground+flightCamera(g)-5-FLIGHT.visualHeight-g.y<=C.height;}
+const FALL=Object.freeze({left:120,right:1160,anchorY:300,bodyHeight:116,halfWidth:27,maxVx:560,accel:2400,brake:3000});
+function fallRects(row,distance){return row.blocks.map(b=>({x:b.x,y:row.depth-distance+(b.offset||0),w:b.w,h:b.h}));}
 const BIOMES=['RAIL YARD','ROOFTOPS','HARBOR','FOUNDRY'];
 // Each chapter is a different traversal, not a bag of ground obstacles.
 // [surface, change in elevation]; widths and gaps are tuned below.
@@ -37,14 +44,15 @@ function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 class Game{
  constructor(random=Math.random){this.random=random;this.best=0;this.phase='title';this.reset();this.phase='title';}
  reset(){
-  this.mode='running';this.modeTime=0;this.groundEnd=50;this.flightStart=50;this.flightPassed=0;this.flightSpawned=0;this.gates=[];this.balloon=0;this.flightBase=0;this.flightBag=[];this.airPhraseBag=[];this.airSteps=[];this.lastAirPhrase=-1;this.lastFlightKind='';this.flapTime=1;this.score=0;this.elapsed=0;this.pace=0;this.landStrength=0;this.distance=0;this.speed=C.initialSpeed;this.y=180;this.surfaceY=180;this.vy=0;this.animation='running';this.animTime=0;this.landTime=0;this.deathTime=0;this.deathY=0;this.deathVy=0;this.grounded=true;this.events=[];this.newBest=false;
+  this.fallRows=[];this.fallX=640;this.fallVx=0;this.steerInput=0;this.fallDistance=0;this.fallPassed=0;this.fallSpawned=0;this.fallStart=100;this.mode='running';this.modeTime=0;this.groundEnd=50;this.flightStart=50;this.flightPassed=0;this.flightSpawned=0;this.gates=[];this.balloon=0;this.flightBase=0;this.flightBag=[];this.airPhraseBag=[];this.airSteps=[];this.lastAirPhrase=-1;this.lastFlightKind='';this.flapTime=1;this.score=0;this.elapsed=0;this.pace=0;this.landStrength=0;this.distance=0;this.speed=C.initialSpeed;this.y=180;this.surfaceY=180;this.vy=0;this.animation='running';this.animTime=0;this.landTime=0;this.deathTime=0;this.deathY=0;this.deathVy=0;this.grounded=true;this.events=[];this.newBest=false;
   this.biome=1;this.routeIndex=0;this.chapter='ROOFTOP ESCAPE';this.chapterId=0;this.chapterBag=[];this.lastChapter=0;this.nextSerial=1;this.generatedChapters=[];
   this.obstacles=[];this.platforms=[{kind:'roof',x:-500,w:1450,h:180,biome:1,chapter:0,name:this.chapter,serial:0,scored:true,variant:0}];
   this.hitKind='gap';this.hitOverhead=false;this.appendChapter(0);
  }
  start(){this.reset();this.phase='playing';this.events.push({type:'start'});}
  jump(){if(this.phase!=='playing')return false;if(this.mode==='flying'){if(this.flapTime<.12)return false;this.flapTime=0;this.vy=FLIGHT.lift;this.animation='jumping';this.animTime=0;this.events.push({type:'flap',y:this.y});return true;}if(this.mode!=='running'||!this.grounded)return false;this.grounded=false;this.vy=C.jumpVelocity;this.animation='jumping';this.animTime=0;this.events.push({type:'jump',y:this.y});return true;}
- pause(){if(this.phase==='playing'){this.phase='paused';return true;}return false;}
+ steer(direction){this.steerInput=Math.max(-1,Math.min(1,direction));}
+ pause(){if(this.phase==='playing'){this.steerInput=0;this.phase='paused';return true;}return false;}
  resume(){if(this.phase==='paused'){this.phase='playing';return true;}return false;}
  chooseChapter(){
   if(!this.chapterBag.length){this.chapterBag=CHAPTERS.map((_,i)=>i).filter(i=>i!==this.lastChapter);for(let i=this.chapterBag.length-1;i>0;i--){let j=Math.floor(this.random()*(i+1));[this.chapterBag[i],this.chapterBag[j]]=[this.chapterBag[j],this.chapterBag[i]];}}
@@ -133,16 +141,67 @@ class Game{
   if(this.chapter!==names[chapterIndex]){this.chapter=names[chapterIndex];this.biome=[2,3,1,2][chapterIndex];this.events.push({type:'airchapter',name:this.chapter});}
   for(const o of this.gates){
    o.x-=travel;
-   if(C.playerX+FLIGHT.halfWidth>o.x&&C.playerX-FLIGHT.halfWidth<o.x+o.w&&(this.y<o.low||this.y+FLIGHT.bodyHeight>o.high)){this.die({kind:o.kind});return;}
+   if(airSolids(o).some(s=>overlap(airBody(this),s))){this.die({kind:o.kind});return;}
    if(!o.scored&&o.x+o.w<C.playerX-FLIGHT.halfWidth){o.scored=true;this.flightPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});}
   }
   // Flight camera settles at base+60; character anchor is 5 px above its feet.
   // Screen bottom is therefore base-85. Allow the entire tilted character
   // (140 px conservative visual extent, no balloon) to leave before dying.
-  if(this.y+FLIGHT.visualHeight<this.flightBase+FLIGHT.viewportBottom||this.y+FLIGHT.bodyHeight>this.flightBase+FLIGHT.ceiling){this.die({kind:'airspace'});return;}
+  if(!flightVisible(this)||this.y+FLIGHT.bodyHeight>this.flightBase+FLIGHT.ceiling){this.die({kind:'airspace'});return;}
   this.gates=this.gates.filter(o=>o.x+o.w>-160);
-  if(this.flightPassed===50){this.mode='landing';this.modeTime=0;this.launchY=this.y;this.gates=[];this.chapter='ROOFTOP APPROACH';this.returnRoof={kind:'roof',x:800,w:680,h:this.flightBase+90,biome:1,chapter:-2,name:'ROOFTOP RETURN',serial:this.score,scored:true,recovery:true,variant:0};this.platforms=[this.returnRoof];this.events.push({type:'approach',name:'50 AIR GAPS CLEARED — LANDING AHEAD'});return;}
+  if(this.flightPassed===50){this.beginFall();return;}
   const last=this.gates[this.gates.length-1];if(!last||last.x+last.w<1700)this.appendFlightGate();
+ }
+ beginFall(){
+  this.mode='drop';this.modeTime=0;this.fallStart=this.score;this.fallPassed=0;this.fallSpawned=0;this.fallRows=[];this.fallDistance=0;this.fallX=640;this.fallVx=0;this.steerInput=0;this.dropY=C.ground-this.y-5+flightCamera(this);this.balloon=0;this.gates=[];this.platforms=[];this.chapter='THE DROP';this.events.push({type:'drop',name:'BALLOON POPPED — HOLD LEFT / RIGHT TO SLIDE'});
+ }
+ appendFallRow(){
+  if(this.fallSpawned>=50)return;
+  const i=this.fallSpawned++,deep=i>=25,pressure=Math.min(1,i/49),cycle=Math.min(3,Math.floor(this.fallStart/150));
+  const widths=deep?[240,205,285,220,330,195]:[380,330,410,300,360,290];
+  const gap=widths[i%widths.length]-cycle*8;
+  // Shuffle complete traversals, with no duplicate phrase at a boundary.
+  if(!this.fallSteps?.length||i===0){
+   const phrases=[[270,610,960,630],[970,650,290,580],[620,300,900,620],[310,940,650,280]];
+   let pick=Math.floor(this.random()*phrases.length);if(pick===this.lastFallPhrase)pick=(pick+1)%phrases.length;
+   this.lastFallPhrase=pick;this.fallSteps=phrases[pick].slice();
+  }
+  let center=this.fallSteps.shift()+(this.random()-.5)*36;
+  center=Math.max(FALL.left+gap/2+12,Math.min(FALL.right-gap/2-12,center));
+  if(i===0)center=640;
+  const previous=this.fallRows.at(-1),kind=deep?['beam','cargo','split','floor'][i%4]:['floor','beam','floor','split'][i%4];
+  const h=kind==='cargo'?94:kind==='floor'?44:30;
+  const speed=260+i*2.6+cycle*12;
+  // Include full body clearance, acceleration, reversal, and an extra reaction buffer.
+  const delta=previous?Math.abs(center-previous.center):0;
+  const spacing=Math.max(340,speed*(delta/460+.52)+FALL.bodyHeight+(previous?.height||44));
+  const depth=previous?previous.depth+spacing:this.fallDistance+910;
+  const left=center-gap/2,right=center+gap/2;
+  const blocks=kind==='cargo'?[{x:Math.max(80,left-240),w:Math.min(240,left-80),h},{x:right,w:Math.min(240,1200-right),h}]:[{x:80,w:left-80,h},{x:right,w:1200-right,h}];
+  if(kind==='split')blocks[1].offset=42;
+  this.fallRows.push({index:i,depth,center,gap,kind,height:h+(kind==='split'?42:0),blocks,scored:false,deep});
+ }
+ updateFall(dt){
+  this.modeTime+=dt;
+  if(this.mode==='drop'){
+   if(this.modeTime>=1.8){this.mode='falling';this.modeTime=0;this.chapter='BROKEN FLOORS';this.appendFallRow();this.events.push({type:'fall',name:'FREEFALL — HOLD ← / → OR A / D'});}return;
+  }
+  if(this.mode==='fall-exit'){
+   if(this.modeTime>=1.8){this.mode='running';this.modeTime=0;this.groundEnd=this.score+50;this.nextSerial=this.score+1;this.chapterId=-1;this.y=240;this.surfaceY=240;this.vy=0;this.grounded=true;this.balloon=0;this.platforms=[{kind:'roof',x:-300,w:1000,h:240,biome:1,chapter:-2,name:'ROOFTOP RETURN',serial:this.score,scored:true,recovery:true,variant:0}];this.land(this.platforms[0]);this.appendChapter(this.chooseChapter());this.events.push({type:'return',name:'BACK ON THE ROOFS — SPACE TO JUMP'});}return;
+  }
+  this.chapter=this.fallPassed<25?'BROKEN FLOORS':'DEEP SHAFT';this.biome=this.fallPassed<25?1:2;
+  const goal=this.steerInput*FALL.maxVx,rate=(this.steerInput?FALL.accel:FALL.brake)*dt;
+  this.fallVx+=Math.max(-rate,Math.min(rate,goal-this.fallVx));this.fallX+=this.fallVx*dt;
+  if(this.fallX<FALL.left||this.fallX>FALL.right){this.fallX=Math.max(FALL.left,Math.min(FALL.right,this.fallX));this.fallVx=0;}
+  this.speed=260+this.fallPassed*2.6+Math.min(3,Math.floor(this.fallStart/150))*12;this.fallDistance+=this.speed*dt;
+  const body={x:this.fallX-FALL.halfWidth,y:FALL.anchorY-FALL.bodyHeight,w:FALL.halfWidth*2,h:FALL.bodyHeight-5};
+  for(const row of this.fallRows){
+   if(fallRects(row,this.fallDistance).some(r=>overlap(body,r))){this.die({kind:row.kind});return;}
+   if(!row.scored&&row.depth+row.height-this.fallDistance<body.y){row.scored=true;this.fallPassed++;this.score++;this.events.push({type:'score',score:this.score,y:this.y});if(this.fallPassed===25)this.events.push({type:'fall',name:'DEEP SHAFT — WATCH THE SUSPENDED CARGO'});}
+  }
+  this.fallRows=this.fallRows.filter(r=>r.depth+r.height-this.fallDistance>-160);
+  if(this.fallPassed===50){this.mode='fall-exit';this.modeTime=0;this.exitX=this.fallX;this.steerInput=0;this.fallRows=[];this.chapter='THE ESCAPE CHUTE';this.events.push({type:'approach',name:'50 DROPS CLEARED — ROOFTOPS AHEAD'});return;}
+  const last=this.fallRows.at(-1);if(!last||last.depth-this.fallDistance<1500)this.appendFallRow();
  }
  die(o){if(this.phase!=='playing')return;this.phase='dying';this.animation='collision';this.animTime=0;this.deathTime=0;this.deathY=this.y;this.deathVy=300;this.hitKind=o.kind;this.newBest=this.newBest||this.score>this.best;this.best=Math.max(this.best,this.score);this.events.push({type:'collision',kind:o.kind,y:this.y});}
  update(dt){
@@ -150,6 +209,7 @@ class Game{
   if(this.phase==='dying'){this.deathTime+=dt;this.animTime+=dt;this.deathVy-=1200*dt;this.deathY+=this.deathVy*dt;if(this.deathTime>=.4){this.phase='gameover';this.events.push({type:'gameover'});}return;}
   if(this.phase!=='playing')return;
   this.elapsed+=dt;this.animTime+=dt;this.speed=this.mode==='flying'?330+Math.min(80,this.flightPassed*1.6)+Math.min(40,Math.floor(this.flightStart/100)*15):this.mode==='launch'?180:this.mode==='landing'?300:speedAt(this.elapsed);const pace=paceAt(this.elapsed);if(pace!==this.pace){this.pace=pace;this.events.push({type:'pace',name:PACE[pace]});}const travel=this.speed*dt;this.distance+=travel;
+  if(['drop','falling','fall-exit'].includes(this.mode)){this.updateFall(dt);return;}
   if(this.mode!=='running'){this.updateAir(dt,travel);return;}
   for(const p of this.platforms)p.x-=travel;
   const supported=this.platforms.some(p=>Math.abs(p.h-this.y)<.01&&p.x<C.playerX+18&&p.x+p.w>C.playerX-18);
@@ -180,5 +240,5 @@ class Game{
     const prev=seconds<10?presets[0]:a;
     return {label:v<.5?prev.label:b.label,rain:prev.rain+(b.rain-prev.rain)*v,fog:prev.fog+(b.fog-prev.fog)*v,storm:prev.storm+(b.storm-prev.storm)*v,wind:prev.wind+(b.wind-prev.wind)*v};
   }
-const API={C,FLIGHT,AIR_PHRASES,BIOMES,CHAPTERS,PACE,speedAt,travelAt,paceAt,Game,rng,overlap,weatherAt};root.NRM=API;if(typeof module!=='undefined')module.exports=API;
+const API={C,FLIGHT,FALL,airSolids,airBody,flightCamera,flightVisible,fallRects,AIR_PHRASES,BIOMES,CHAPTERS,PACE,speedAt,travelAt,paceAt,Game,rng,overlap,weatherAt};root.NRM=API;if(typeof module!=='undefined')module.exports=API;
 })(typeof globalThis!=='undefined'?globalThis:this);

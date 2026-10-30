@@ -4,22 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10151d">
-  <meta name="description" content="Choose Cookie or Jim. One bucket or one wagon. Absolutely no brakes. A precision one-button arcade runner.">
+  <meta name="description" content="Choose Cookie or Jim. One bucket or one wagon. Absolutely no brakes. A precision arcade runner: jump, fly, and freefall.">
   <title>Not Right Meow — After Hours</title>
   <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-  <link rel="stylesheet" href="./style.css?v=jim-1">
+  <link rel="stylesheet" href="./style.css?v=freefall-1">
   <script defer src="./assets/seasonal.js"></script>
   <script defer src="./assets/art.js"></script>
   <script defer src="./assets/jim.js?v=jim-2"></script>
-  <script defer src="./src/core.js?v=bottom-exit-1"></script>
-  <script defer src="./src/audio.js"></script>
-  <script defer src="./src/renderer.js?v=bottom-exit-1"></script>
+  <script defer src="./src/core.js?v=freefall-1"></script>
+  <script defer src="./src/audio.js?v=freefall-1"></script>
+  <script defer src="./src/renderer.js?v=freefall-1"></script>
   <script defer src="./src/leaderboard.js?v=jim-1"></script>
-  <script defer src="./src/game.js?v=jim-2"></script>
+  <script defer src="./src/game.js?v=freefall-1"></script>
 </head>
 <body>
   <main id="app">
-    <header class="page-header"><a class="wordmark" href="./" aria-label="Not Right Meow home"><span class="paw">◆</span> NOT RIGHT MEOW<span class="edition">AFTER HOURS</span></a><span class="header-note">One button. No second chances.</span></header>
+    <header class="page-header"><a class="wordmark" href="./" aria-label="Not Right Meow home"><span class="paw">◆</span> NOT RIGHT MEOW<span class="edition">AFTER HOURS</span></a><span class="header-note">Jump. Fly. Fall. Repeat.</span></header>
     <section id="stage" aria-label="Not Right Meow game">
       <canvas id="game" width="1280" height="720" tabindex="0" aria-label="Cat in a bucket runner. Space or click to jump; after 50 points, tap to fly. P to pause.">Your browser needs HTML5 Canvas to play.</canvas>
       <div class="topline">
@@ -35,10 +35,10 @@
         </nav>
       </div>
       <div id="title-screen" class="screen title-screen">
-        <div class="title-copy"><span class="eyebrow"><span></span> ONE BUTTON. ZERO ROOM FOR ERROR.</span><h1>Not Right<br><span>Meow<span class="title-dot">!</span></span></h1><p>Cookie. One bucket.<br>A city to cross. A long way down.</p><button id="start" class="primary">START RUN <span aria-hidden="true">→</span></button><div class="key-hint">or press <kbd>SPACE</kbd> to start</div></div>
+        <div class="title-copy"><span class="eyebrow"><span></span> THREE WAYS DOWN. ZERO ROOM FOR ERROR.</span><h1>Not Right<br><span>Meow<span class="title-dot">!</span></span></h1><p>Cookie. One bucket.<br>A city to cross. A long way down.</p><button id="start" class="primary">START RUN <span aria-hidden="true">→</span></button><div class="key-hint">or press <kbd>SPACE</kbd> to start</div></div>
         <button id="character-open" class="character-open">CHARACTER · <span id="character-name">COOKIE</span> <span aria-hidden="true">↔</span></button>
         <div class="hero-note"><svg viewBox="0 0 90 65"><path d="M3 4Q70-6 70 45l-13-9m13 9 11-13"/></svg></div>
-        <div class="intro-controls"><span><kbd>SPACE</kbd> / <span class="mouse-icon">◧</span> CLICK TO JUMP</span><span class="dot">•</span><span>50 ROOFTOPS → 50 AIR GAPS</span><span class="dot">•</span><span>BEAT YOUR BEST</span></div>
+        <div class="intro-controls"><span><kbd>SPACE</kbd> / <span class="mouse-icon">◧</span> CLICK TO JUMP</span><span class="dot">•</span><span>50 ROOFTOPS → 50 AIR GAPS → 50 DROPS</span><span class="dot">•</span><span>BEAT YOUR BEST</span></div>
       </div>
       <div id="pause-screen" class="screen modal-screen" hidden><div class="paper-card"><span class="eyebrow">RUN PAUSED</span><h2>Paused.</h2><p>Ready when you are.</p><button id="resume" class="primary">RESUME <span>→</span></button><div class="key-hint"><kbd>SPACE</kbd> or <kbd>P</kbd> to resume</div></div></div>
       <div id="over-screen" class="screen modal-screen" hidden><div class="paper-card"><span id="over-eyebrow" class="eyebrow">RUN ENDED</span><h2>Run over.</h2><p id="quip">The street is a long way down.</p><div class="results"><div><span class="label">YOUR SCORE</span><strong id="final-score">0</strong></div><div><span class="label">PERSONAL BEST</span><strong id="final-best">0</strong></div></div><p id="online-status" class="online-status" role="status"></p><div class="board-actions"><button id="leaderboard-over" class="text-button">LEADERBOARD ↗</button><button id="score-retry" class="text-button" hidden>RETRY POST</button></div><button id="character-over" class="text-button">CHANGE CHARACTER ↔</button><button id="restart" class="primary">ONE MORE TRY <span>↻</span></button><div class="key-hint">press <kbd>SPACE</kbd> to try again</div></div></div>
@@ -69,11 +69,12 @@
         <div class="board-scroll"><table><thead><tr><th scope="col">RANK</th><th scope="col">PLAYER</th><th scope="col">BEST</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
         <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><p id="nickname-note">Your name and best score are posted automatically to the public leaderboard. Use 3–18 letters, numbers, spaces, _ or -. No account needed. Your identity stays in this browser; clearing site data creates a new player. Earlier local scores cannot be imported.</p></form>
       </dialog>
+      <div id="fall-controls" hidden aria-label="Freefall steering"><button id="slide-left" aria-label="Hold to slide left"><span aria-hidden="true">←</span><small>HOLD LEFT</small></button><button id="slide-right" aria-label="Hold to slide right"><span aria-hidden="true">→</span><small>HOLD RIGHT</small></button></div>
       <div id="run-tip" class="run-tip" hidden><kbd>SPACE</kbd> jump near the edge · Land before jumping again.</div>
       <div id="pace-hud" class="pace-hud" hidden><span id="pace-label">WARMUP</span><span class="pace-track"><span id="pace-fill"></span></span><time id="run-clock">0:00</time></div>
       <div id="toast" role="status" aria-live="polite"></div>
     </section>
-    <footer><span><span class="footer-flower">◆</span> <span class="season-tag">AFTER HOURS / PRECISION RUNNER</span></span><span><kbd>SPACE</kbd> jump / fly <i>·</i> <kbd>P</kbd> pause <i>·</i> <kbd>F</kbd> fullscreen</span></footer>
+    <footer><span><span class="footer-flower">◆</span> <span class="season-tag">AFTER HOURS / PRECISION RUNNER</span></span><span><kbd>SPACE</kbd> jump / fly <i>·</i> <kbd>← →</kbd> slide <i>·</i> <kbd>P</kbd> pause <i>·</i> <kbd>F</kbd> fullscreen</span></footer>
     <p id="accessibility-status" class="sr-only" aria-live="polite"></p>
   </main>
 </body>

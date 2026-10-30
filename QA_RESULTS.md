@@ -74,3 +74,12 @@ The preceding revision passed 22 Chrome integration checks for rooftop inputs, p
 - Actual game in Chrome: keyboard space in nickname does not start a run; opening leaderboard pauses; closing keeps the game paused; a real engine run earned 1 point, ended and automatically posted it with a world rank. Five flow checks passed.
 - Desktop leaderboard visually inspected. Existing balloon collision regression passed; core physics code unchanged.
 - Not yet verified on physical iPhone, Edge or Firefox. Basic score validation is not cheat-proof verification. Local test identities are not copied to the production database.
+
+
+## Jim character update — October 30, 2026
+- Original jointed canvas artwork: red JIM wagon, aqua cow, one visible rounded silver glitter wing.
+- Shared physics unchanged; wings, wagon handle and balloon do not add collision shapes.
+- Chrome browser: nine checks passed via tests/jim-browser.html, using real UI and jump events: selection, start, pause, persisted selection after reload, flight at 50, flight pause, rooftop return after 100, restart, Cookie switching. Test runs use ?qa and never post leaderboard scores.
+- Node gameplay suite: 2,058 checks; 36,000 clears across 40 seeds and three timing offsets. Flight suite: 80 runs, 8,000 air clears and both flight/ground transitions. Balloon exclusion probes passed.
+- Inspected idle, running, jump, landing, collision and flight artwork in browser.
+- Firefox, Edge and physical mobile devices were not retested for this update.

@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8"><title>Jim gameplay QA</title><style>body{margin:0;background:#10151d;color:#e8bd83;font:14px monospace}iframe{width:100%;height:78vh;border:0}#out{padding:10px}</style><iframe id="f" src="../?qa&fast"></iframe><div id="out">Testing…</div><script src="pilot.js"></script><script>
+const f=document.getElementById('f'),out=document.getElementById('out'),checks=[];
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function until(fn){let n=0;while(!fn()){if(++n>15000)throw Error('timeout');await wait(20);}}
+const d=()=>f.contentDocument,s=()=>f.contentWindow.NotRightMeow.snapshot(),click=id=>d().getElementById(id).click(),key=code=>d().dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));
+function check(ok,label){if(!ok)throw Error(label);checks.push(label);out.textContent=checks.join(' · ');}
+(async()=>{try{
+await until(()=>f.contentWindow.NotRightMeow);
+if(d().getElementById('welcome-dialog').open){d().getElementById('welcome-name').value='JimQA';d().getElementById('welcome-profile').requestSubmit();await wait(100);}
+if(!d().getElementById('character-dialog').open)click('character-open');
+d().querySelector('[data-character="jim"]').click();check(d().querySelector('[data-character="jim"]').getAttribute('aria-pressed')==='true','Jim selected');click('character-confirm');check(s().character==='jim'&&s().phase==='playing','Jim starts');key('KeyP');check(s().phase==='paused','Pause works');
+f.contentWindow.location.reload();await until(()=>f.contentWindow.NotRightMeow&&s().phase==='title');check(s().character==='jim','Jim persists after reload');click('start');
+let pilot=()=>{const g=s();if(NRMTest.wantsJump(g))key('Space');};d().addEventListener('nrm-before-step',pilot);
+await until(()=>{if(s().phase!=='playing')throw Error('Unexpected death '+s().score);return s().mode==='flying';});check(s().score===50&&s().character==='jim'&&s().balloon===1,'Jim reaches 50 and flies');key('KeyP');let before=JSON.stringify([s().y,s().elapsed,s().gates]);await wait(150);check(before===JSON.stringify([s().y,s().elapsed,s().gates]),'Flight pause freezes movement');key('Space');
+await until(()=>{if(s().phase!=='playing')throw Error('Unexpected flight death '+s().score);return s().score>=103;});check(s().mode==='running'&&s().character==='jim'&&s().balloon===0,'Jim returns to rooftops after 100');d().removeEventListener('nrm-before-step',pilot);
+await until(()=>s().phase==='gameover');click('restart');check(s().character==='jim'&&s().score===0,'Restart preserves Jim');key('KeyP');
+f.contentWindow.location.reload();await until(()=>f.contentWindow.NotRightMeow&&s().phase==='title');click('character-open');d().querySelector('[data-character="cookie"]').click();click('character-confirm');check(s().character==='cookie'&&s().phase==='playing','Cookie remains playable');key('KeyP');
+out.textContent='ALL 9 CHECKS PASSED · '+checks.join(' · ');
+}catch(e){out.textContent='FAILED: '+e.message+' · '+checks.join(' · ');}})();
+</script>

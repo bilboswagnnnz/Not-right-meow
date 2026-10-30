@@ -144,9 +144,9 @@
       if(!isTitle)this.billboard(c,g);
       if(isTitle){
         // Hero is drawn with the same jointed artwork used during gameplay.
-        A.ellipse(c,866,576,123,16,'#3b562b30');A.cat(c,{x:866,y:572,scale:1.85,time:t,state:'idle'});
+        A.ellipse(c,866,576,123,16,'#3b562b30');(this.character==='jim'?A.jim:A.cat)(c,{x:866,y:572,scale:1.85,time:t,state:'idle'});
         if(window.Halloween)Halloween.title(c,t,this.reduced);
-        c.save();c.fillStyle='#91a9ad';c.font='11px monospace';c.textAlign='center';c.fillText('COOKIE / NO BRAKES',866,622);c.restore();
+        c.save();c.fillStyle='#91a9ad';c.font='11px monospace';c.textAlign='center';c.fillText((this.character==='jim'?'JIM':'COOKIE')+' / NO BRAKES',866,622);c.restore();
       }else{
         if(this.camera===undefined||g.elapsed===0)this.camera=g.surfaceY-100;
         if(!frozen)this.camera+=(g.surfaceY-100-this.camera)*(1-Math.exp(-dt*5));
@@ -159,7 +159,7 @@
         const dying=g.phase==='dying'||g.phase==='gameover',jumpY=dying?g.deathY:g.y;
         const under=(g.platforms||[]).filter(p=>p.x<C.playerX&&p.x+p.w>C.playerX&&p.h<=jumpY+1).reduce((h,p)=>Math.max(h,p.h),0);
         A.ellipse(c,C.playerX,C.ground-under+3,Math.max(19,47-(jumpY-under)*.12),6,'#3b51273a');
-        A.cat(c,{x:C.playerX-(dying?Math.min(22,g.deathTime*30):0),y:C.ground-jumpY-5,time:t,state:dying?'collision':g.animation,vy:g.vy,land:g.landTime,impact:g.landStrength,death:g.deathTime,balloon:g.balloon,scale:1-.28*g.balloon});
+        (this.character==='jim'?A.jim:A.cat)(c,{x:C.playerX-(dying?Math.min(22,g.deathTime*30):0),y:C.ground-jumpY-5,time:t,state:dying?'collision':g.animation,vy:g.vy,land:g.landTime,impact:g.landStrength,death:g.deathTime,balloon:g.balloon,scale:1-.28*g.balloon});
         if(dying){for(let i=0;i<3;i++){let a=t*3+i*2.094;A.star(c,C.playerX+Math.cos(a)*51,C.ground-jumpY-187+Math.sin(a)*12,7,'#ffdf77',a);}}
         c.restore();
       }

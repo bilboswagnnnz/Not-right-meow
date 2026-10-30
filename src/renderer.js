@@ -119,7 +119,7 @@
     billboardX(g){
       if(g.distance<this.billboardLastDistance||g.score===0)this.billboardAnchor=null;
       this.billboardLastDistance=g.distance;
-      if(this.billboardAnchor===null&&g.mode==='flying'&&g.score>=59&&g.score<=61)this.billboardAnchor=g.distance;
+      if(this.billboardAnchor===null&&g.mode==='running'&&g.score>=44&&g.score<=46)this.billboardAnchor=g.distance;
       if(this.billboardAnchor===null)return null;
       const x=1280-(g.distance-this.billboardAnchor)*.65;
       return x < -440 ? null : x;

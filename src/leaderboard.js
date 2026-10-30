@@ -72,12 +72,27 @@
    catch{this.message.textContent='Browser storage is blocked. Allow site storage to join the leaderboard.';}
   }
   async refresh(){
-   if(this.loading)return;this.loading=true;
+   if(this.loading){this.needsRefresh=true;return;}this.loading=true;
+   const token=this.profile.token;
    const button=document.getElementById('leaderboard-refresh');button.disabled=true;
    this.message.textContent='Loading scores…';
-   try{this.render(await this.request());this.message.textContent='Live scores · Top 100 · Highest score first';}
-   catch(e){this.message.textContent=e.message;if(!this.hasScores)document.getElementById('top-three-rows').textContent='Scores unavailable · Tap to retry';}
-   finally{this.loading=false;button.disabled=false;}
+   try{
+    const data=await this.request('GET',undefined,token);
+    if(token!==this.profile.token)return; // Do not import another browser identity's best.
+    this.render(data);this.message.textContent='Live scores · Top 100 · Highest score first';
+   }
+   catch(e){
+    if(token!==this.profile.token)return;
+    this.message.textContent=e.message;
+    if(!this.hasScores)document.getElementById('top-three-rows').textContent='Scores unavailable · Tap to retry';
+   }
+   finally{
+    this.loading=false;button.disabled=false;
+    if(this.needsRefresh||token!==this.profile.token){
+     this.needsRefresh=false;
+     queueMicrotask(()=>this.refresh());
+    }
+   }
   }
   render(data){
    if(data.me&&Number.isFinite(Number(data.me.best)))this.onRemoteBest?.(Number(data.me.best));

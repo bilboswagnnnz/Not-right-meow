@@ -68,3 +68,10 @@ Web Audio starts after a user gesture. Browser privacy settings may prevent pers
 
 - `assets/seasonal.js`: original seasonal artwork and event dates.
 - `halloween-check.html`: seasonal presentation, date, music and layout browser checks.
+
+## Shared online leaderboard
+Open the trophy button in the upper-right corner, enter a nickname, check **Post my future runs automatically**, and press **Save**. Future runs with at least one point are posted automatically. The Top 100 and your own rank are shared with other players. Leaderboard browsing pauses an active run; closing it leaves the run paused until resumed.
+
+A random player token is saved only in the current browser. Clearing site data or changing browser/device creates a new leaderboard identity. Names can repeat; a short tag distinguishes them. Nicknames and scores are public. Turning sharing off stops future submissions but does not erase previously posted scores. Old device-only bests cannot be imported. A failed connection never prevents local play; the game shows a retry option for a failed score post. QA URL runs never submit.
+
+The game is still static on GitHub Pages. Shared scores use the separate D1-backed service at `https://not-right-meow-scores.rareboot37.chatgpt.site/api/leaderboard`. The public frontend contains no database keys. This optional online feature requires network access; the downloaded game remains playable locally without it. The backend limits requests and checks run ownership, duplicates, score/time bounds, and version. These are basic abuse checks, not cheat-proof server replay verification.

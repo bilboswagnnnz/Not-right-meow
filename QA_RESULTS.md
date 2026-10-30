@@ -66,3 +66,11 @@ The preceding revision passed 22 Chrome integration checks for rooftop inputs, p
 - Fullscreen was blocked by the preview environment during the preceding revision; actual fullscreen remains unverified.
 - Hardware 60 FPS and touch input remain unverified.
 - GitHub Pages has not been deployed. The downloadable package includes all source and exact deployment steps. The existing hosted game is published separately.
+
+## Shared leaderboard — October 30, 2026
+- Backend production build and TypeScript check passed.
+- Validation unit checks passed for nickname/token formats, integer scores, score/time caps, elapsed time and allowed origins.
+- Actual local D1 + HTTP browser integration: 12 checks passed (public read, nickname rejection, run registration, cross-identity rejection, impossible score/time rejection, persistence/rank, duplicate rejection, two-player visibility/order, lower-best preservation and no credentials in public entries).
+- Actual game in Chrome: keyboard space in nickname does not start a run; opening leaderboard pauses; closing keeps the game paused; a real engine run earned 1 point, ended and automatically posted it with a world rank. Five flow checks passed.
+- Desktop leaderboard visually inspected. Existing balloon collision regression passed; core physics code unchanged.
+- Not yet verified on physical iPhone, Edge or Firefox. Basic score validation is not cheat-proof verification. Local test identities are not copied to the production database.

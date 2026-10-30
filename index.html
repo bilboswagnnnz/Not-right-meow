@@ -13,6 +13,7 @@
   <script defer src="./src/core.js"></script>
   <script defer src="./src/audio.js"></script>
   <script defer src="./src/renderer.js"></script>
+  <script defer src="./src/leaderboard.js"></script>
   <script defer src="./src/game.js"></script>
 </head>
 <body>
@@ -24,6 +25,7 @@
         <div id="scoreboard" class="scoreboard"><div><span class="label">SCORE</span><strong id="score">0</strong></div><span class="score-divider"></span><div><span class="label">PERSONAL BEST</span><strong id="best">0</strong></div></div>
         <span id="place-label" class="place-label">DUSK RUN</span>
         <nav class="tools" aria-label="Game controls">
+          <button id="leaderboard-open" class="tool" title="Online leaderboard" aria-label="Open leaderboard"><svg viewBox="0 0 24 24"><path d="M8 3h8v7a4 4 0 0 1-8 0zM8 5H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v6m-4 0h8"/></svg></button>
           <button id="pause" class="tool" title="Pause (P / Esc)" aria-label="Pause game" disabled><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button>
           <button id="sound" class="tool" title="Sound effects (M)" aria-label="Sound effects" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4zM17 8q6 4 0 8"/></svg><span class="off-slash"></span></button>
           <button id="music" class="tool" title="Background music" aria-label="Background music" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M9 17V6l11-2v11M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg><span class="off-slash"></span></button>
@@ -36,7 +38,14 @@
         <div class="intro-controls"><span><kbd>SPACE</kbd> / <span class="mouse-icon">◧</span> CLICK TO JUMP</span><span class="dot">•</span><span>50 ROOFTOPS → 50 AIR GAPS</span><span class="dot">•</span><span>BEAT YOUR BEST</span></div>
       </div>
       <div id="pause-screen" class="screen modal-screen" hidden><div class="paper-card"><span class="eyebrow">RUN PAUSED</span><h2>Paused.</h2><p>Ready when you are.</p><button id="resume" class="primary">RESUME <span>→</span></button><div class="key-hint"><kbd>SPACE</kbd> or <kbd>P</kbd> to resume</div></div></div>
-      <div id="over-screen" class="screen modal-screen" hidden><div class="paper-card"><span id="over-eyebrow" class="eyebrow">RUN ENDED</span><h2>Run over.</h2><p id="quip">The street is a long way down.</p><div class="results"><div><span class="label">YOUR SCORE</span><strong id="final-score">0</strong></div><div><span class="label">PERSONAL BEST</span><strong id="final-best">0</strong></div></div><button id="restart" class="primary">ONE MORE TRY <span>↻</span></button><div class="key-hint">press <kbd>SPACE</kbd> to try again</div></div></div>
+      <div id="over-screen" class="screen modal-screen" hidden><div class="paper-card"><span id="over-eyebrow" class="eyebrow">RUN ENDED</span><h2>Run over.</h2><p id="quip">The street is a long way down.</p><div class="results"><div><span class="label">YOUR SCORE</span><strong id="final-score">0</strong></div><div><span class="label">PERSONAL BEST</span><strong id="final-best">0</strong></div></div><p id="online-status" class="online-status" role="status"></p><div class="board-actions"><button id="leaderboard-over" class="text-button">LEADERBOARD ↗</button><button id="score-retry" class="text-button" hidden>RETRY POST</button></div><button id="restart" class="primary">ONE MORE TRY <span>↻</span></button><div class="key-hint">press <kbd>SPACE</kbd> to try again</div></div></div>
+      <dialog id="leaderboard-dialog" aria-labelledby="leaderboard-title">
+        <div class="board-heading"><div><span class="eyebrow">ONE BUCKET. A WORLD OF RIVALS.</span><h2 id="leaderboard-title">The leaderboard.</h2></div><button id="leaderboard-close" class="tool" aria-label="Close leaderboard">✕</button></div>
+        <div class="board-summary"><strong id="leaderboard-me">Your first posted score earns your place.</strong><button id="leaderboard-refresh" class="text-button">REFRESH ↻</button></div>
+        <p id="leaderboard-message" role="status" aria-live="polite">Loading scores…</p>
+        <div class="board-scroll"><table><thead><tr><th scope="col">RANK</th><th scope="col">PLAYER</th><th scope="col">BEST</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
+        <form id="leaderboard-profile"><label for="nickname">YOUR NICKNAME</label><div class="nickname-row"><input id="nickname" name="nickname" maxlength="18" autocomplete="off" placeholder="e.g. CookieCrew" aria-describedby="nickname-note"><button class="primary" type="submit">SAVE</button></div><label class="sharing-choice"><input id="share-scores" type="checkbox"> Post my future runs automatically</label><p id="nickname-note">Nicknames and scores are public. Use 3–18 letters, numbers, spaces, _ or -. No account needed. Your identity stays in this browser; clearing site data creates a new player. Earlier local scores cannot be imported.</p></form>
+      </dialog>
       <div id="run-tip" class="run-tip" hidden><kbd>SPACE</kbd> jump near the edge · Land before jumping again.</div>
       <div id="pace-hud" class="pace-hud" hidden><span id="pace-label">WARMUP</span><span class="pace-track"><span id="pace-fill"></span></span><time id="run-clock">0:00</time></div>
       <div id="toast" role="status" aria-live="polite"></div>

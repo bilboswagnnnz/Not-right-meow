@@ -28,7 +28,7 @@
   function save(){try{localStorage.setItem(STORE,JSON.stringify({best:game.best,sfx:audio.sfx,music:audio.music}));}catch(e){if(storageOK)toast('Best score is kept for this session only.');storageOK=false;}}
   function toast(message){$('toast').textContent=message;$('toast').classList.add('visible');toastUntil=performance.now()+2800;}
   async function unlock(){if(!await audio.unlock())toast('Audio unavailable. The game is still ready to play.');audio.setPlaying(game.phase==='playing');}
-  function start(jump=false){clearSteering();if(leaderboard.askName(()=>start(jump)))return;if(!characterChosen){openCharacters(()=>start(jump));return;}game.start();leaderboard.beginRun();renderer.particles=[];renderer.rings=[];renderer.closeCallLife=0;renderer.camera=game.surfaceY-100;accumulator=0;unlock();audio.effect('menu');if(jump)game.jump();syncUI();canvas.focus({preventScroll:true});}
+  function start(jump=false){clearSteering();if(leaderboard.askName(()=>start(jump)))return;if(!characterChosen){openCharacters(()=>start(jump));return;}game.start();leaderboard.beginRun(character);renderer.particles=[];renderer.rings=[];renderer.closeCallLife=0;renderer.camera=game.surfaceY-100;accumulator=0;unlock();audio.effect('menu');if(jump)game.jump();syncUI();canvas.focus({preventScroll:true});}
   function updateCharacter(){
     renderer.character=character;canvas.setAttribute('aria-label',(character==='jim'?'Jim in a red wagon':'Cookie in a bucket')+' runner. Space or click to jump; after 50 points, tap to fly; after 100, hold left/right or A/D to slide. P to pause.');$('character-name').textContent=character.toUpperCase();
     $('character-confirm').textContent='PLAY AS '+character.toUpperCase()+' →';

@@ -5,6 +5,7 @@ on:
       - 'pairing-worker/**'
       - 'src/pairing.js'
       - 'src/leaderboard.js'
+      - 'tests/leaderboard-character.cjs'
       - 'src/game.js'
       - 'index.html'
       - 'assets/qrcode.js'
@@ -30,5 +31,7 @@ jobs:
           node --check src/game.js
           node --check src/pairing.js
           node --check pairing-worker/src/index.js
+      - name: Test leaderboard character sticker and score metadata
+        run: node --test tests/leaderboard-character.cjs
       - name: Run encrypted pairing relay tests
         run: node --test pairing-worker/test/pairing.test.mjs

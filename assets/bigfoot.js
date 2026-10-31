@@ -27,7 +27,7 @@ A.bigfootReady=new Promise(resolve=>{
  };
  sprite.onerror=()=>{A.bigfootStatus='error';resolve(false);};
 });
-sprite.src=new URL('./bigfoot.png?v=melvin-tag-1',document.currentScript.src).href;
+sprite.src=new URL('./bigfoot.png?v=bigfoot-untagged-1',document.currentScript.src).href;
 A.bigfoot=function(c,{time=0,state='idle',vy=0,land=0,impact=0,death=0,balloon=0,scale=1,x=0,y=0}={}){
  if(A.bigfootStatus!=='ready')return;
  c.save();c.translate(x,y);c.scale(scale,scale);

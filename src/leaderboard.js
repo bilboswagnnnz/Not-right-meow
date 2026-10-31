@@ -123,23 +123,25 @@
   characterPortrait(character){
    // Transparent cutout artwork is a sticker of the actual playable
    // character. Never infer the best-score character from the active choice.
-   const kind=character==='cookie'||character==='jim'?character:null;
+   const kind=['cookie','jim','bigfoot'].includes(character)?character:null;
    if(!kind)return null; // Old leaderboard entries have no reliable character metadata.
    const sticker=document.createElement('span');
    sticker.className='leaderboard-character';
-   sticker.title='Best score achieved with '+(kind==='cookie'?'Cookie':'Jim');
+   sticker.title='Best score achieved with '+(kind==='bigfoot'?'Bigfoot':kind==='cookie'?'Cookie':'Jim');
    sticker.setAttribute('role','img');
    sticker.setAttribute('aria-label',sticker.title);
    const canvas=document.createElement('canvas');
    canvas.width=96;canvas.height=96;
    canvas.setAttribute('aria-hidden','true');
    const c=canvas.getContext('2d');
-   const draw=window.PaperArt&&(kind==='cookie'?PaperArt.cat:PaperArt.jim);
+   const draw=window.PaperArt&&(kind==='bigfoot'?PaperArt.bigfoot:kind==='cookie'?PaperArt.cat:PaperArt.jim);
    if(c&&typeof draw==='function'){
     // No background or badge frame: the empty pixels stay transparent.
-    c.save();
-    draw(c,{x:48,y:84,scale:.46,state:'idle',time:0});
-    c.restore();
+    const paint=()=>{c.clearRect(0,0,96,96);c.save();draw(c,{x:48,y:84,scale:.46,state:'idle',time:0});c.restore();};
+    if(kind==='bigfoot'&&PaperArt.bigfootStatus!=='ready'){
+     // Score data can arrive before the sprite finishes loading.
+     PaperArt.bigfootReady?.then(ready=>{if(ready)paint();});
+    }else paint();
    }
    sticker.append(canvas);
    return sticker;
@@ -258,9 +260,7 @@
    if(fromWelcome){const ready=this.onReady;this.onReady=null;ready?.();}
   }
   beginRun(character){
-   // Bigfoot runs use the API's legacy null metadata until the separate score
-   // service accepts bigfoot. Scores still post; never label them as Cookie/Jim.
-   const selectedCharacter=['cookie','jim'].includes(character)?character:null;
+   const selectedCharacter=['cookie','jim','bigfoot'].includes(character)?character:null;
    const job={ready:null,runId:null,error:null,score:0,elapsed:0,busy:false,token:this.profile.token,character:selectedCharacter};this.current=job;this.pending=null;
    document.getElementById('score-retry').hidden=true;
    if(!this.hasName()||!this.profile.token){this.status.textContent='Enter your leaderboard name before playing.';return;}

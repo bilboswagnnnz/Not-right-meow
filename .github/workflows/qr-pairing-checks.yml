@@ -13,6 +13,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'tests/leaderboard-character.cjs'
+      - '.github/workflows/qr-pairing-checks.yml'
       - 'pairing-worker/**'
       - 'src/pairing.js'
       - 'src/leaderboard.js'

@@ -8,6 +8,8 @@ function setup(enableCharacterMetadata=false){
  const art={
   cat:(context,opts)=>drawings.push({character:'cookie',opts}),
   jim:(context,opts)=>drawings.push({character:'jim',opts}),
+  bigfoot:(context,opts)=>drawings.push({character:'bigfoot',opts}),
+  bigfootStatus:'ready',
  };
  const elements=new Map();
  function node(tag){
@@ -19,7 +21,7 @@ function setup(enableCharacterMetadata=false){
    textContent:'',
    append(...children){this.children.push(...children);},
    setAttribute(key,value){this.attributes[key]=value;},
-   getContext(){return {save(){},restore(){}};}
+   getContext(){return {clearRect(){},save(){},restore(){}};}
   };
  }
  const document={
@@ -36,18 +38,21 @@ function setup(enableCharacterMetadata=false){
  const board=Object.create(window.NRMLeaderboard.prototype);
  board.status=document.getElementById('online-status');
  board.message=document.getElementById('leaderboard-message');
- return {board,document,drawings};
+ return {board,document,drawings,art};
 }
 
 test('sticker is the actual selected character artwork with no background',()=>{
  const {board,drawings}=setup();
  const cookie=board.characterPortrait('cookie');
  const jim=board.characterPortrait('jim');
+ const bigfoot=board.characterPortrait('bigfoot');
+ assert.equal(bigfoot.attributes['aria-label'],'Best score achieved with Bigfoot');
+ assert.equal(bigfoot.children[0].tagName,'canvas');
  assert.equal(cookie.className,'leaderboard-character');
  assert.equal(jim.className,'leaderboard-character');
  assert.equal(cookie.children[0].tagName,'canvas');
  assert.equal(jim.children[0].tagName,'canvas');
- assert.deepEqual(drawings.map(d=>d.character),['cookie','jim']);
+ assert.deepEqual(drawings.map(d=>d.character),['cookie','jim','bigfoot']);
  assert.equal(board.characterPortrait(null),null);
  assert.equal(board.characterPortrait('other'),null);
 });
@@ -92,4 +97,25 @@ test('without server support score submission stays in legacy format',async()=>{
  assert.equal(captured.length,2);
  assert.equal('character' in captured[0],false);
  assert.equal('character' in captured[1],false);
+});
+
+
+test('Bigfoot sticker waits for sprite loading without drawing a different character',async()=>{
+ const {board,drawings,art}=setup();
+ let ready;
+ art.bigfootStatus='loading';art.bigfootReady=new Promise(resolve=>{ready=resolve;});
+ const sticker=board.characterPortrait('bigfoot');
+ assert.equal(sticker.children[0].tagName,'canvas');assert.equal(drawings.length,0);
+ art.bigfootStatus='ready';ready(true);await Promise.resolve();
+ assert.deepEqual(drawings.map(d=>d.character),['bigfoot']);
+});
+test('Bigfoot remains the recorded character from start through score submission',async()=>{
+ const {board}=setup(true);
+ board.profile={nickname:'Bigfoot Player',token:'c'.repeat(64)};
+ const captured=[];
+ board.request=async(method,body)=>{captured.push(body);return body.action==='start'?{runId:'bf-1'}:{me:{best:18,rank:1,bestCharacter:'bigfoot'},entries:[]};};
+ board.render=()=>{};
+ board.beginRun('bigfoot');await board.current.ready;await board.finishRun(18,25);
+ assert.deepEqual(captured.map(v=>v.character),['bigfoot','bigfoot']);
+ assert.equal(board.bestScoreCharacter({bestCharacter:'bigfoot',character:'cookie'}),'bigfoot');
 });
